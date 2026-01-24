@@ -12,6 +12,9 @@ struct lyrixApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .frame(width: 850, height: 600)
         }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
     }
 }
