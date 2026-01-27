@@ -9,7 +9,10 @@ import SwiftUI
 
 struct CustomizationView: View {
     @ObservedObject var settings = LyricsSettings.shared
-    
+    @ObservedObject var themeManager = CustomThemeManager.shared
+    @State private var showThemeBuilder = false
+    @State private var editingTheme: CustomTheme?
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -240,14 +243,65 @@ struct CustomizationView: View {
     // MARK: - Components
     
     private var themeGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 120))], spacing: 12) {
-            ForEach(LyricsTheme.allCases, id: \.self) { theme in
-                ThemeButton(
-                    theme: theme,
-                    isSelected: settings.theme == theme.rawValue,
-                    action: { settings.theme = theme.rawValue }
-                )
+        VStack(spacing: 16) {
+            // Built-in themes (excluding Custom)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 120))], spacing: 12) {
+                ForEach(LyricsTheme.allCases.filter { $0 != .custom }, id: \.self) { theme in
+                    ThemeButton(
+                        theme: theme,
+                        isSelected: settings.theme == theme.rawValue && settings.theme != "Custom",
+                        action: {
+                            settings.theme = theme.rawValue
+                            themeManager.setActiveTheme(nil)
+                        }
+                    )
+                }
             }
+
+            // Custom themes section
+            if !themeManager.themes.isEmpty {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Custom Themes")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 120))], spacing: 12) {
+                        ForEach(themeManager.themes) { theme in
+                            CustomThemeButton(
+                                theme: theme,
+                                isSelected: settings.theme == "Custom" && themeManager.activeCustomThemeId == theme.id,
+                                onSelect: {
+                                    themeManager.setActiveTheme(theme)
+                                },
+                                onEdit: {
+                                    editingTheme = theme
+                                    showThemeBuilder = true
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Create new theme button
+            Button(action: {
+                editingTheme = nil
+                showThemeBuilder = true
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Create Custom Theme")
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+        }
+        .sheet(isPresented: $showThemeBuilder) {
+            ThemeBuilderView(theme: editingTheme)
         }
     }
     
@@ -367,6 +421,7 @@ struct ThemeButton: View {
         case .neon: return [Color(red: 0.1, green: 0.05, blue: 0.2), Color(red: 0, green: 0.3, blue: 0.3)]
         case .minimal: return [Color.black.opacity(0.8), Color.black.opacity(0.6)]
         case .transparent: return [Color.clear, Color.clear]
+        case .custom: return [Color.purple.opacity(0.3), Color.blue.opacity(0.3)]
         }
     }
     
@@ -410,6 +465,60 @@ struct ThemeButton: View {
                     .font(.caption2)
                     .fontWeight(isSelected ? .semibold : .regular)
                     .foregroundColor(isSelected ? .accentColor : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Custom Theme Button
+
+struct CustomThemeButton: View {
+    let theme: CustomTheme
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onEdit: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(
+                            LinearGradient(
+                                colors: [theme.bgColor, theme.bgColor.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(height: 44)
+
+                    Text("Aa")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(theme.textColor)
+                        .shadow(color: theme.glow.opacity(0.5), radius: 4)
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+                )
+                .overlay(alignment: .topTrailing) {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 2)
+                    }
+                    .buttonStyle(.plain)
+                    .offset(x: 4, y: -4)
+                }
+
+                Text(theme.name)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                    .lineLimit(1)
             }
         }
         .buttonStyle(.plain)
