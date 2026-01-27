@@ -72,6 +72,7 @@ class LyricsViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] playing in
                 self?.isPlaying = playing
+                self?.updateWidgetData()
             }
             .store(in: &cancellables)
         
@@ -85,10 +86,11 @@ class LyricsViewModel: ObservableObject {
     }
     
     // MARK: - Song Change Handling
-    
+
     private func handleSongChange(_ song: Song?) {
+        let previousSong = currentSong
         currentSong = song
-        
+
         guard let song = song else {
             lyrics = nil
             lyricsOptions = []
@@ -97,10 +99,16 @@ class LyricsViewModel: ObservableObject {
             isCached = false
             return
         }
-        
+
         // Only fetch if song actually changed
         if lastFetchedSong != song {
             lastFetchedSong = song
+
+            // Show notification for new song (not on first load)
+            if previousSong != nil {
+                NotificationManager.shared.showNowPlayingNotification(for: song)
+            }
+
             Task {
                 await fetchLyrics(for: song)
             }
@@ -124,10 +132,10 @@ class LyricsViewModel: ObservableObject {
             lyricsOptions = options.options
             selectedLyricsIndex = options.defaultIndex
             lyrics = options.defaultLyrics
-            
+
             // Check if this was from cache (fast response)
             isCached = LyricsCache.shared.get(for: song) != nil
-            
+
             print("✅ Loaded \(options.options.count) lyrics options, cached: \(isCached)")
         } else {
             lyricsOptions = []
@@ -136,6 +144,8 @@ class LyricsViewModel: ObservableObject {
             isCached = false
             print("❌ No lyrics found")
         }
+
+        updateWidgetData()
     }
     
     /// Manually trigger lyrics fetch for current song (bypasses cache)
@@ -194,16 +204,36 @@ class LyricsViewModel: ObservableObject {
     }
     
     // MARK: - Synced Lyrics
-    
+
     private func updateCurrentLine(for position: TimeInterval) {
         playbackPosition = position
-        
+
         guard let lyrics = lyrics, lyrics.isSynced else {
             currentLineIndex = nil
             return
         }
-        
-        currentLineIndex = lyrics.currentLineIndex(for: position)
+
+        let newIndex = lyrics.currentLineIndex(for: position)
+        if newIndex != currentLineIndex {
+            currentLineIndex = newIndex
+            updateWidgetData()
+        }
+    }
+
+    // MARK: - Widget Data
+
+    private func updateWidgetData() {
+        let currentLyric: String?
+        if let index = currentLineIndex, let lyrics = lyrics, index < lyrics.lines.count {
+            currentLyric = lyrics.lines[index].text
+        } else {
+            currentLyric = nil
+        }
+        WidgetDataManager.shared.updateNowPlaying(
+            song: currentSong,
+            currentLyric: currentLyric,
+            isPlaying: isPlaying
+        )
     }
     
     // MARK: - Manual Song Entry (for testing)

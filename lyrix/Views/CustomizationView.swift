@@ -141,14 +141,14 @@ struct CustomizationView: View {
                                 }
                                 .padding(.vertical, 4)
                             }
-                            
+
                             VStack(spacing: 12) {
                                 HStack(alignment: .bottom) {
                                     VStack(alignment: .leading, spacing: 6) {
                                         Text("Animation Speed")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
-                                        
+
                                         Picker("Speed", selection: $settings.animationSpeed) {
                                             Text("Slow").tag("Slow")
                                             Text("Normal").tag("Normal")
@@ -158,15 +158,15 @@ struct CustomizationView: View {
                                         .labelsHidden()
                                         .frame(width: 180)
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     if settings.animationStyle == "Slide Up" {
                                         VStack(alignment: .trailing, spacing: 6) {
                                             Text("Show Lines")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                            
+
                                             HStack(spacing: 16) {
                                                 Toggle("Prev", isOn: $settings.showPreviousLine)
                                                 Toggle("Next", isOn: $settings.showNextLine)
@@ -215,6 +215,23 @@ struct CustomizationView: View {
                                     shortcutRow("Skip -10s", shortcut: "⌥⌘,")
                                 }
                             }
+                        }
+                    }
+
+                    // Notifications
+                    CustomSection(title: "Notifications", icon: "bell") {
+                        HStack {
+                            Toggle(isOn: $settings.showNowPlayingNotification) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Now Playing Notification")
+                                        .font(.subheadline)
+                                    Text("Show a notification when the song changes")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .toggleStyle(.switch)
+                            Spacer()
                         }
                     }
                 }
