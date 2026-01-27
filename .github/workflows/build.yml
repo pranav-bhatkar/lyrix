@@ -26,11 +26,6 @@ jobs:
     name: Build for macOS
     runs-on: macos-26
 
-    strategy:
-      fail-fast: false
-      matrix:
-        configuration: [Debug, Release]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,12 +51,12 @@ jobs:
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }}
 
-      - name: Build ${{ matrix.configuration }}
+      - name: Build Release
         run: |
           xcodebuild clean build \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }} \
-            -configuration ${{ matrix.configuration }} \
+            -configuration Release \
             -destination "platform=macOS" \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
@@ -70,7 +65,6 @@ jobs:
             | xcpretty && exit ${PIPESTATUS[0]}
 
       - name: Archive build artifacts
-        if: matrix.configuration == 'Release'
         run: |
           xcodebuild archive \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
@@ -83,10 +77,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Upload build artifacts
-        if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-${{ matrix.configuration }}-${{ github.sha }}
+          name: ${{ env.APP_NAME }}-Release-${{ github.sha }}
           path: ./build/${{ env.APP_NAME }}.xcarchive
           retention-days: 7
 
