@@ -58,30 +58,39 @@ struct CustomizationView: View {
                     // Typography
                     CustomSection(title: "Typography", icon: "textformat") {
                         VStack(spacing: 16) {
-                            HStack(spacing: 20) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Font Family")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Picker("Font Family", selection: $settings.fontName) {
-                                        Text("Sans").tag("Default")
-                                        Text("Serif").tag("Serif")
-                                        Text("Rounded").tag("Rounded")
-                                        Text("Mono").tag("Monospaced")
-                                    }
-                                    .pickerStyle(.segmented)
-                                    .labelsHidden()
+                            // Font Family
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Font Family")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Picker("Font Family", selection: $settings.fontName) {
+                                    Text("Sans").tag("Default")
+                                    Text("Serif").tag("Serif")
+                                    Text("Rounded").tag("Rounded")
+                                    Text("Mono").tag("Monospaced")
                                 }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Size")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    HStack {
-                                        Slider(value: $settings.fontSize, in: 14...32, step: 1)
-                                        Text("\(Int(settings.fontSize))pt")
-                                            .font(.caption.monospacedDigit())
-                                            .frame(width: 35)
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+                            }
+
+                            Divider()
+
+                            // Font Size Presets
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Text Size")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                HStack(spacing: 10) {
+                                    ForEach(FontSizePreset.allCases, id: \.self) { preset in
+                                        FontSizeButton(
+                                            preset: preset,
+                                            isSelected: settings.fontSizePreset == preset.rawValue,
+                                            action: {
+                                                settings.fontSizePreset = preset.rawValue
+                                                settings.fontSize = preset.size
+                                            }
+                                        )
                                     }
                                 }
                             }
@@ -491,6 +500,82 @@ struct AnimationButton: View {
         .buttonStyle(.plain)
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+// MARK: - Font Size Preset
+
+enum FontSizePreset: String, CaseIterable {
+    case small = "S"
+    case medium = "M"
+    case large = "L"
+    case extraLarge = "XL"
+
+    var size: Double {
+        switch self {
+        case .small: return 16
+        case .medium: return 20
+        case .large: return 24
+        case .extraLarge: return 28
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .small: return "Small"
+        case .medium: return "Medium"
+        case .large: return "Large"
+        case .extraLarge: return "Extra Large"
+        }
+    }
+}
+
+// MARK: - Font Size Button
+
+struct FontSizeButton: View {
+    let preset: FontSizePreset
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.08))
+                        .frame(height: 52)
+
+                    Text("Aa")
+                        .font(.system(size: textSize, weight: .semibold, design: .rounded))
+                        .foregroundColor(isSelected ? .white : .primary.opacity(0.7))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: 1)
+                )
+
+                VStack(spacing: 1) {
+                    Text(preset.rawValue)
+                        .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+
+                    Text("\(Int(preset.size))pt")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var textSize: CGFloat {
+        switch preset {
+        case .small: return 14
+        case .medium: return 16
+        case .large: return 18
+        case .extraLarge: return 20
+        }
     }
 }
 

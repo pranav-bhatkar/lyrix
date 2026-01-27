@@ -54,7 +54,8 @@ class LyricsSettings: ObservableObject {
     
     // MARK: - Typography
     @AppStorage("lyrics.fontName") var fontName: String = "Default"
-    @AppStorage("lyrics.fontSize") var fontSize: Double = 22
+    @AppStorage("lyrics.fontSize") var fontSize: Double = 24
+    @AppStorage("lyrics.fontSizePreset") var fontSizePreset: String = "L"
     
     // MARK: - Floating Window State
     @AppStorage("lyrics.floatingEnabled") var floatingEnabled: Bool = false
