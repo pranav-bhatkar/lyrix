@@ -13,6 +13,8 @@ struct SettingsView: View {
     @State private var manualTitle = ""
     @State private var manualArtist = ""
     @State private var showManualSearch = false
+    @State private var songChangeAnimation = false
+    @State private var lastSongId: String = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -22,7 +24,7 @@ struct SettingsView: View {
             Divider()
             
             // Main content
-            if viewModel.isLoading && viewModel.lyrics == nil {
+            if viewModel.isLoading {
                 loadingView
             } else if let error = viewModel.error, viewModel.lyrics == nil {
                 errorView(error)
@@ -50,48 +52,72 @@ struct SettingsView: View {
     private var nowPlayingHeader: some View {
         VStack(spacing: 20) {
             HStack(spacing: 20) {
-                // Artwork
-                ZStack {
-                    if let artwork = viewModel.currentSong?.artwork {
-                        Image(nsImage: artwork)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.secondary.opacity(0.1))
-                        
-                        Image(systemName: "music.note")
-                            .font(.system(size: 32))
-                            .foregroundColor(.secondary)
+                // Artwork with sync badge
+                ZStack(alignment: .bottomTrailing) {
+                    ZStack {
+                        if let artwork = viewModel.currentSong?.artwork {
+                            Image(nsImage: artwork)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } else {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.accentColor.opacity(0.2), Color.purple.opacity(0.2)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+
+                            Image(systemName: "music.note")
+                                .font(.system(size: 40))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(width: 110, height: 110)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                    .scaleEffect(songChangeAnimation ? 0.92 : 1.0)
+                    .opacity(songChangeAnimation ? 0.7 : 1.0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: songChangeAnimation)
+
+                    // Sync status badge
+                    if viewModel.lyrics != nil || viewModel.isLoading {
+                        syncBadge
+                            .offset(x: 6, y: 6)
                     }
                 }
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                
+
                 // Song info & Controls
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
                         if let song = viewModel.currentSong {
                             Text(song.title)
                                 .font(.title2)
                                 .fontWeight(.bold)
-                                .lineLimit(1)
-                            
+                                .lineLimit(2)
+                                .opacity(songChangeAnimation ? 0.5 : 1.0)
+                                .offset(y: songChangeAnimation ? -4 : 0)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: songChangeAnimation)
+
                             Text(song.artist)
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
+                                .opacity(songChangeAnimation ? 0.5 : 1.0)
+                                .offset(y: songChangeAnimation ? -2 : 0)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.05), value: songChangeAnimation)
                         } else {
                             Text("No song playing")
                                 .font(.title2)
                                 .fontWeight(.bold)
-                            
+
                             Text("Play something to get started")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                         }
                     }
-                    
+
                     // Controls
                     HStack(spacing: 24) {
                         Button(action: { viewModel.previousTrack() }) {
@@ -99,13 +125,13 @@ struct SettingsView: View {
                                 .font(.title2)
                         }
                         .buttonStyle(.plain)
-                        
+
                         Button(action: { viewModel.playPause() }) {
                             Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.system(size: 32))
                         }
                         .buttonStyle(.plain)
-                        
+
                         Button(action: { viewModel.nextTrack() }) {
                             Image(systemName: "forward.fill")
                                 .font(.title2)
@@ -114,9 +140,9 @@ struct SettingsView: View {
                     }
                     .foregroundColor(.primary)
                 }
-                
+
                 Spacer()
-                
+
                 // App Button
                 if viewModel.activePlayer != nil {
                     Button(action: { viewModel.openActivePlayer() }) {
@@ -193,8 +219,19 @@ struct SettingsView: View {
             }
         }
         .padding(24)
+        .onChange(of: viewModel.currentSong?.title) { oldTitle, newTitle in
+            let newSongId = "\(newTitle ?? "")-\(viewModel.currentSong?.artist ?? "")"
+            if newTitle != nil && newSongId != lastSongId && !lastSongId.isEmpty {
+                // Trigger animation
+                songChangeAnimation = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    songChangeAnimation = false
+                }
+            }
+            lastSongId = newSongId
+        }
     }
-    
+
     // MARK: - Lyrics Content View
     
     private var lyricsContentView: some View {
@@ -367,6 +404,35 @@ struct SettingsView: View {
         let mins = Int(seconds) / 60
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", mins, secs)
+    }
+
+    @ViewBuilder
+    private var syncBadge: some View {
+        if viewModel.isLoading {
+            HStack(spacing: 3) {
+                ProgressView()
+                    .scaleEffect(0.5)
+                    .frame(width: 10, height: 10)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Color.secondary)
+            .foregroundColor(.white)
+            .cornerRadius(6)
+        } else {
+            let isSynced = viewModel.lyrics?.isSynced ?? false
+            HStack(spacing: 3) {
+                Image(systemName: isSynced ? "waveform" : "text.alignleft")
+                    .font(.system(size: 8, weight: .bold))
+                Text(isSynced ? "SYNC" : "TEXT")
+                    .font(.system(size: 8, weight: .bold))
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(isSynced ? Color.green : Color.orange)
+            .foregroundColor(.white)
+            .cornerRadius(6)
+        }
     }
 }
 
