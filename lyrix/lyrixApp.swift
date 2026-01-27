@@ -56,7 +56,7 @@ struct lyrixApp: App {
         .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Window") {
+                Button("Show Window") {
                     openMainWindow()
                 }
                 .keyboardShortcut("n", modifiers: .command)
