@@ -2,7 +2,10 @@
 
 A macOS app that displays synchronized lyrics from Spotify and Apple Music in a beautiful floating overlay.
 
+https://github.com/user-attachments/assets/8e9da57e-0fdf-4295-a36f-4e1f9d40a0c8
+
 ## Features
+
 
 - **Real-time lyrics sync** - Lyrics scroll automatically with your music
 - **Floating overlay** - A sleek, always-on-top window that stays visible while you work
