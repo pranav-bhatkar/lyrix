@@ -203,12 +203,17 @@ jobs:
 
       - name: Create DMG
         run: |
-          cd Release
+          # Create staging folder for DMG contents
+          mkdir -p dmg-staging
+          cp -R "Release/${{ env.APP_NAME }}.app" dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+
+          # Create DMG with drag-and-drop layout
           hdiutil create \
-            -volname "${{ env.APP_NAME }} ${{ needs.preparation.outputs.version }}" \
-            -srcfolder "${{ env.APP_NAME }}.app" \
+            -volname "${{ env.APP_NAME }}" \
+            -srcfolder dmg-staging \
             -ov -format UDZO \
-            "${{ env.APP_NAME }}.dmg"
+            "Release/${{ env.APP_NAME }}.dmg"
 
       - name: Create .app zip
         run: |
