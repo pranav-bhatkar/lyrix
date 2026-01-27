@@ -276,12 +276,15 @@ jobs:
     name: Finalize Release
     needs: [preparation, build, release]
     runs-on: ubuntu-latest
-    if: always()
+    # Only run if preparation actually ran (not skipped due to non-release comment)
+    if: always() && needs.preparation.result != 'skipped'
     steps:
       - name: Add success reaction
         if: |
           github.event_name == 'issue_comment' &&
-          !contains(join(needs.*.result, ','), 'failure')
+          needs.preparation.result == 'success' &&
+          needs.build.result == 'success' &&
+          needs.release.result == 'success'
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ github.event.comment.id }}
@@ -290,15 +293,17 @@ jobs:
       - name: Add failure reaction
         if: |
           github.event_name == 'issue_comment' &&
-          contains(join(needs.*.result, ','), 'failure')
+          needs.preparation.result != 'skipped' &&
+          (needs.preparation.result == 'failure' || needs.build.result == 'failure' || needs.release.result == 'failure')
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ github.event.comment.id }}
           reactions: confused
 
       - name: Create summary
+        if: needs.preparation.result == 'success'
         run: |
-          if [[ "${{ contains(join(needs.*.result, ','), 'failure') }}" == "false" ]]; then
+          if [[ "${{ needs.release.result }}" == "success" ]]; then
             echo "Successfully released Lyrix v${{ needs.preparation.outputs.version }}" >> $GITHUB_STEP_SUMMARY
             echo "Build ${{ needs.preparation.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
             echo "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.preparation.outputs.version }}" >> $GITHUB_STEP_SUMMARY
