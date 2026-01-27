@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var showManualSearch = false
     @State private var songChangeAnimation = false
     @State private var lastSongId: String = ""
+    @State private var showCopiedToast = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -236,56 +237,141 @@ struct SettingsView: View {
     
     private var lyricsContentView: some View {
         VStack(spacing: 0) {
-            // Lyrics source picker at top of lyrics area
-            if viewModel.lyricsOptions.count > 1 {
-                HStack {
+            // Lyrics toolbar
+            HStack(spacing: 12) {
+                // Source picker
+                if viewModel.lyricsOptions.count > 1 {
                     ForEach(Array(viewModel.lyricsOptions.enumerated()), id: \.offset) { index, lyrics in
                         Button(action: { viewModel.selectedLyricsIndex = index }) {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 4) {
                                 Image(systemName: lyrics.isSynced ? "waveform" : "text.alignleft")
-                                    .font(.caption)
+                                    .font(.caption2)
                                 Text(lyrics.isSynced ? "Synced" : "Plain")
-                                    .font(.caption)
+                                    .font(.caption2)
                                     .fontWeight(.medium)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(
                                 Capsule()
-                                    .fill(viewModel.selectedLyricsIndex == index 
-                                          ? Color.accentColor 
+                                    .fill(viewModel.selectedLyricsIndex == index
+                                          ? Color.accentColor
                                           : Color.secondary.opacity(0.15))
                             )
                             .foregroundColor(viewModel.selectedLyricsIndex == index ? .white : .secondary)
                         }
                         .buttonStyle(.plain)
                     }
-                    
-                    Spacer()
-                    
-                    // Sync indicator
-                    if let lyrics = viewModel.lyrics {
-                        HStack(spacing: 4) {
-                            Image(systemName: lyrics.isSynced ? "checkmark.circle.fill" : "circle")
-                                .font(.caption)
-                            Text(lyrics.source.rawValue)
-                                .font(.caption)
+                }
+
+                Spacer()
+
+                // Quick actions
+                if viewModel.lyrics != nil {
+                    HStack(spacing: 8) {
+                        quickActionButton("Copy", icon: "doc.on.doc") {
+                            copyLyricsToClipboard()
                         }
-                        .foregroundColor(.secondary)
+
+                        quickActionButton("Share", icon: "square.and.arrow.up") {
+                            shareLyricsAsImage()
+                        }
+
+                        if viewModel.activePlayer != nil {
+                            quickActionButton("Open", icon: "arrow.up.right") {
+                                viewModel.openActivePlayer()
+                            }
+                        }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color.secondary.opacity(0.05))
             }
-            
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color.secondary.opacity(0.05))
+
             // Lyrics scroll view
             if let lyrics = viewModel.lyrics {
                 lyricsView(lyrics)
             }
         }
+        .overlay(alignment: .bottom) {
+            if showCopiedToast {
+                Text("Copied to clipboard")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.primary.opacity(0.9))
+                    .foregroundColor(Color(nsColor: .windowBackgroundColor))
+                    .cornerRadius(20)
+                    .padding(.bottom, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
     }
-    
+
+    private func quickActionButton(_ label: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption2)
+                Text(label)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Color.secondary.opacity(0.1))
+            .cornerRadius(6)
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.secondary)
+    }
+
+    private func copyLyricsToClipboard() {
+        guard let lyrics = viewModel.lyrics else { return }
+
+        var text = ""
+        if let song = viewModel.currentSong {
+            text = "\(song.title) - \(song.artist)\n\n"
+        }
+        text += lyrics.lines.map { $0.text }.joined(separator: "\n")
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            showCopiedToast = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showCopiedToast = false
+            }
+        }
+    }
+
+    @MainActor
+    private func shareLyricsAsImage() {
+        guard let lyrics = viewModel.lyrics else { return }
+
+        let imageView = LyricsShareView(
+            song: viewModel.currentSong,
+            lyrics: lyrics,
+            currentLineIndex: viewModel.currentLineIndex
+        )
+
+        let renderer = ImageRenderer(content: imageView)
+        renderer.scale = 2.0
+
+        guard let nsImage = renderer.nsImage else { return }
+
+        let picker = NSSharingServicePicker(items: [nsImage])
+        if let window = NSApp.keyWindow, let contentView = window.contentView {
+            picker.show(relativeTo: .zero, of: contentView, preferredEdge: .minY)
+        }
+    }
+
     // MARK: - Loading View
     
     private var loadingView: some View {
@@ -466,6 +552,79 @@ struct LyricLineView: View {
                 .fill(isCurrentLine ? Color.accentColor.opacity(0.12) : Color.clear)
         )
         .animation(.easeInOut(duration: 0.2), value: isCurrentLine)
+    }
+}
+
+// MARK: - Lyrics Share View
+
+struct LyricsShareView: View {
+    let song: Song?
+    let lyrics: Lyrics
+    let currentLineIndex: Int?
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 8) {
+                if let song = song {
+                    Text(song.title)
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                    Text(song.artist)
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
+            .padding(.top, 32)
+            .padding(.bottom, 24)
+
+            // Lyrics
+            VStack(spacing: 12) {
+                let linesToShow = getLyricsLines()
+                ForEach(Array(linesToShow.enumerated()), id: \.offset) { index, line in
+                    Text(line.text)
+                        .font(.system(size: 18, weight: line.isCurrent ? .bold : .regular))
+                        .foregroundColor(line.isCurrent ? .white : .white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 32)
+
+            // Footer
+            HStack {
+                Spacer()
+                Text("lyrix")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 20)
+        }
+        .frame(width: 400)
+        .background(
+            LinearGradient(
+                colors: [Color(red: 0.1, green: 0.1, blue: 0.15), Color(red: 0.05, green: 0.05, blue: 0.1)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+
+    private func getLyricsLines() -> [(text: String, isCurrent: Bool)] {
+        guard let index = currentLineIndex else {
+            // No current line, show first few lines
+            return lyrics.lines.prefix(5).map { ($0.text, false) }
+        }
+
+        // Show 2 lines before, current, and 2 after
+        let start = max(0, index - 2)
+        let end = min(lyrics.lines.count, index + 3)
+
+        return (start..<end).map { i in
+            (lyrics.lines[i].text, i == index)
+        }
     }
 }
 
