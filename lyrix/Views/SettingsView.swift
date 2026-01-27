@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @StateObject private var viewModel = LyricsViewModel()
+    @ObservedObject private var viewModel = SharedViewModel.shared.lyricsViewModel
     @StateObject private var floatingManager = FloatingLyricsManager.shared
     @State private var manualTitle = ""
     @State private var manualArtist = ""

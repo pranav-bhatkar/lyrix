@@ -7,8 +7,24 @@
 
 import SwiftUI
 
+// MARK: - Shared View Model
+/// Shared LyricsViewModel instance for use across the app
+@MainActor
+class SharedViewModel {
+    static let shared = SharedViewModel()
+    let lyricsViewModel = LyricsViewModel()
+    private init() {}
+}
+
 // MARK: - App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // Setup menu bar with shared viewModel
+        Task { @MainActor in
+            MenuBarManager.shared.setup(viewModel: SharedViewModel.shared.lyricsViewModel)
+        }
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         // When clicking dock icon or reactivating app, ensure main window is visible
         if !flag {

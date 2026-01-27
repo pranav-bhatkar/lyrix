@@ -114,6 +114,48 @@ struct CustomizationView: View {
                         }
                     }
                     
+                    // Menu Bar
+                    CustomSection(title: "Menu Bar", icon: "menubar.rectangle") {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Toggle(isOn: $settings.menuBarEnabled) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Show lyrics in menu bar")
+                                        .font(.subheadline)
+                                    Text("Display current lyric line in the menu bar")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .toggleStyle(.switch)
+                            .onChange(of: settings.menuBarEnabled) { _, enabled in
+                                if enabled {
+                                    MenuBarManager.shared.enable()
+                                } else {
+                                    MenuBarManager.shared.disable()
+                                }
+                            }
+
+                            HStack {
+                                Text("Max characters")
+                                    .font(.subheadline)
+
+                                Spacer()
+
+                                Picker("Max characters", selection: $settings.menuBarMaxLength) {
+                                    Text("No limit").tag(0)
+                                    Text("50").tag(50)
+                                    Text("80").tag(80)
+                                    Text("100").tag(100)
+                                }
+                                .pickerStyle(.menu)
+                                .labelsHidden()
+                                .frame(width: 120)
+                            }
+                            .opacity(settings.menuBarEnabled ? 1 : 0.4)
+                            .disabled(!settings.menuBarEnabled)
+                        }
+                    }
+
                     // Motion
                     CustomSection(title: "Motion", icon: "wand.and.stars") {
                         VStack(spacing: 16) {

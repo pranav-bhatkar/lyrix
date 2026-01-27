@@ -58,6 +58,10 @@ class LyricsSettings: ObservableObject {
     
     // MARK: - Floating Window State
     @AppStorage("lyrics.floatingEnabled") var floatingEnabled: Bool = false
+
+    // MARK: - Menu Bar Settings
+    @AppStorage("lyrics.menuBarEnabled") var menuBarEnabled: Bool = true
+    @AppStorage("lyrics.menuBarMaxLength") var menuBarMaxLength: Int = 0  // 0 = no limit
     
     // MARK: - Window Position (runtime only)
     @Published var windowX: CGFloat = 100
