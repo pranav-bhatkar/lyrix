@@ -166,15 +166,68 @@ struct CustomizationView: View {
                             }
                         }
                     }
+
+                    // Keyboard Shortcuts
+                    CustomSection(title: "Keyboard Shortcuts", icon: "keyboard") {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Toggle(isOn: Binding(
+                                get: { KeyboardShortcutManager.shared.shortcutsEnabled },
+                                set: { enabled in
+                                    KeyboardShortcutManager.shared.shortcutsEnabled = enabled
+                                    if enabled {
+                                        KeyboardShortcutManager.shared.startMonitoring()
+                                    } else {
+                                        KeyboardShortcutManager.shared.stopMonitoring()
+                                    }
+                                }
+                            )) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Enable Global Shortcuts")
+                                        .font(.subheadline)
+                                    Text("Control Lyrix from anywhere")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .toggleStyle(.switch)
+
+                            if KeyboardShortcutManager.shared.shortcutsEnabled {
+                                Divider()
+
+                                VStack(alignment: .leading, spacing: 12) {
+                                    shortcutRow("Toggle Overlay", shortcut: "⌥⌘L")
+                                    shortcutRow("Play / Pause", shortcut: "⌥⌘P")
+                                    shortcutRow("Next Track", shortcut: "⌥⌘→")
+                                    shortcutRow("Previous Track", shortcut: "⌥⌘←")
+                                    shortcutRow("Skip +10s", shortcut: "⌥⌘.")
+                                    shortcutRow("Skip -10s", shortcut: "⌥⌘,")
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
-                
+
                 Spacer(minLength: 32)
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
-    
+
+    private func shortcutRow(_ action: String, shortcut: String) -> some View {
+        HStack {
+            Text(action)
+                .font(.subheadline)
+            Spacer()
+            Text(shortcut)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary.opacity(0.15))
+                .cornerRadius(6)
+        }
+    }
+
     // MARK: - Components
     
     private var themeGrid: some View {

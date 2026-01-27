@@ -9,6 +9,12 @@ import SwiftUI
 
 // MARK: - App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        Task { @MainActor in
+            KeyboardShortcutManager.shared.setup()
+        }
+    }
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         // When clicking dock icon or reactivating app, ensure main window is visible
         if !flag {
