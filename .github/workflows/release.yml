@@ -147,7 +147,7 @@ jobs:
   build:
     name: Build App
     needs: preparation
-    runs-on: macos-latest
+    runs-on: macos-26
     if: needs.preparation.outputs.should_proceed != 'false'
     steps:
       - name: Checkout code
@@ -155,9 +155,9 @@ jobs:
         with:
           ref: ${{ github.event_name == 'issue_comment' && needs.preparation.outputs.pr_head_ref || github.ref }}
 
-      - name: Select Xcode version
+      - name: Select Xcode 26.2
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+          sudo xcode-select -s /Applications/Xcode_26.2.app
           xcodebuild -version
 
       - name: Resolve Swift packages
@@ -187,7 +187,8 @@ jobs:
             -destination "generic/platform=macOS" \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            MACOSX_DEPLOYMENT_TARGET=15.0
 
       - name: Extract .app from archive
         run: |
@@ -209,11 +210,22 @@ jobs:
             -ov -format UDZO \
             "${{ env.APP_NAME }}.dmg"
 
+      - name: Create .app zip
+        run: |
+          cd Release
+          zip -r -y "${{ env.APP_NAME }}.zip" "${{ env.APP_NAME }}.app"
+
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.dmg
           path: Release/${{ env.APP_NAME }}.dmg
+
+      - name: Upload .app zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.zip
+          path: Release/${{ env.APP_NAME }}.zip
 
   release:
     name: Create GitHub Release
@@ -225,6 +237,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.dmg
+          path: ./artifacts
+
+      - name: Download .app zip
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.zip
           path: ./artifacts
 
       - name: List downloaded files
@@ -268,7 +286,9 @@ jobs:
 
             - **Commit:** ${{ github.sha }}
             - **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          files: ./artifacts/${{ env.APP_NAME }}.dmg
+          files: |
+            ./artifacts/${{ env.APP_NAME }}.dmg
+            ./artifacts/${{ env.APP_NAME }}.zip
           prerelease: ${{ needs.preparation.outputs.is_beta == 'true' }}
           draft: false
 

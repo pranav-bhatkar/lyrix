@@ -25,9 +25,11 @@ A macOS app that displays synchronized lyrics from Spotify and Apple Music in a 
 
 ### Download
 
-1. Go to [Releases](../../releases) and download the latest `lyrix.dmg`
-2. Open the DMG file
-3. Drag **Lyrix** to your **Applications** folder
+1. Go to [Releases](../../releases) and download:
+   - **`lyrix.dmg`** (recommended) - Disk image, drag to Applications
+   - **`lyrix.zip`** - Direct .app download
+2. If using DMG: Open it and drag **Lyrix** to your **Applications** folder
+3. If using ZIP: Extract and move **Lyrix.app** to **Applications**
 
 ### First Launch (Important)
 
@@ -47,7 +49,7 @@ On first launch, Lyrix will ask for **Automation permissions** to control Spotif
 
 ## Requirements
 
-- macOS 13.0 or later
+- macOS 13.0 (Ventura) or later
 - Spotify or Apple Music
 
 ## Building from Source
