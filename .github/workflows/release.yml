@@ -1,0 +1,312 @@
+name: "Release Mac App"
+
+on:
+  # Trigger via comment on PR
+  issue_comment:
+    types: [created]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+      is_beta:
+        description: 'Is this a beta release?'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: "lyrix"
+  SCHEME_NAME: "lyrix"
+  PROJECT_NAME: "lyrix"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  preparation:
+    name: Prepare Release
+    # Trigger on /release comment OR manual workflow_dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.pull_request && contains(github.event.comment.body, '/release'))
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
+      is_beta: ${{ steps.set-version.outputs.is_beta }}
+      build_number: ${{ steps.set-version.outputs.build_number }}
+      should_proceed: ${{ steps.check-permissions.outputs.should_proceed }}
+      pr_head_ref: ${{ steps.get-pr-branch.outputs.head_ref }}
+    steps:
+      - name: Checkout for tag check
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add reaction to comment
+        if: github.event_name == 'issue_comment'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: eyes
+
+      - name: Get PR branch (for PR comments)
+        id: get-pr-branch
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.issue.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            core.setOutput('head_ref', pr.head.ref);
+            console.log(`PR #${prNumber} head branch: ${pr.head.ref}`);
+
+      - name: Check permissions (for PR comments)
+        id: check-permissions
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commenter = context.payload.comment.user.login;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            try {
+              const perm = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner, repo, username: commenter
+              });
+              const level = perm.data.permission;
+
+              if (level !== 'admin' && level !== 'write') {
+                core.setFailed("Only admins and maintainers can trigger releases");
+                core.setOutput('should_proceed', 'false');
+                return;
+              }
+
+              core.setOutput('should_proceed', 'true');
+            } catch (err) {
+              core.setFailed("Failed to check permissions: " + err.message);
+              core.setOutput('should_proceed', 'false');
+            }
+
+      - name: Extract version from comment or input
+        id: set-version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_BETA="${{ github.event.inputs.is_beta }}"
+          else
+            COMMENT="${{ github.event.comment.body }}"
+            # Extract version from comment like "/release 1.0.0" or "/release beta 1.0.0-beta.1"
+            VERSION=$(echo "$COMMENT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?' | head -1)
+
+            if [[ -z "$VERSION" ]]; then
+              echo "No version found in comment. Use format: /release 1.0.0"
+              exit 1
+            fi
+
+            if [[ "$VERSION" == *"beta"* ]] || [[ "$COMMENT" == *"beta"* ]]; then
+              IS_BETA="true"
+            else
+              IS_BETA="false"
+            fi
+          fi
+
+          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_beta=$IS_BETA" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+          echo "### Release Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number:** $BUILD_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "- **Beta:** $IS_BETA" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check if version already exists
+        run: |
+          VERSION="v${{ steps.set-version.outputs.version }}"
+
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "Version $VERSION already exists!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  build:
+    name: Build App
+    needs: preparation
+    runs-on: macos-latest
+    if: needs.preparation.outputs.should_proceed != 'false'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'issue_comment' && needs.preparation.outputs.pr_head_ref || github.ref }}
+
+      - name: Select Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME_NAME }}
+
+      - name: Update version in project
+        run: |
+          VERSION="${{ needs.preparation.outputs.version }}"
+          BUILD="${{ needs.preparation.outputs.build_number }}"
+
+          # Update version in pbxproj
+          sed -i '' "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = $VERSION/g" ${{ env.PROJECT_NAME }}.xcodeproj/project.pbxproj
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = $BUILD/g" ${{ env.PROJECT_NAME }}.xcodeproj/project.pbxproj
+
+          echo "Updated to version $VERSION (build $BUILD)"
+
+      - name: Build and archive
+        run: |
+          xcodebuild clean archive \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME_NAME }} \
+            -configuration Release \
+            -archivePath ./${{ env.APP_NAME }}.xcarchive \
+            -destination "generic/platform=macOS" \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Extract .app from archive
+        run: |
+          mkdir -p ./Release
+          cp -R "./${{ env.APP_NAME }}.xcarchive/Products/Applications/${{ env.APP_NAME }}.app" ./Release/
+
+      - name: Ad-hoc sign for Apple Silicon
+        run: |
+          # Ad-hoc signing allows the app to run on Apple Silicon
+          codesign -s - --deep --force ./Release/${{ env.APP_NAME }}.app
+          codesign -dv ./Release/${{ env.APP_NAME }}.app
+
+      - name: Create DMG
+        run: |
+          cd Release
+          hdiutil create \
+            -volname "${{ env.APP_NAME }} ${{ needs.preparation.outputs.version }}" \
+            -srcfolder "${{ env.APP_NAME }}.app" \
+            -ov -format UDZO \
+            "${{ env.APP_NAME }}.dmg"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.dmg
+          path: Release/${{ env.APP_NAME }}.dmg
+
+  release:
+    name: Create GitHub Release
+    needs: [preparation, build]
+    runs-on: ubuntu-latest
+    if: needs.preparation.outputs.should_proceed != 'false'
+    steps:
+      - name: Download DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.preparation.outputs.version }}.dmg
+          path: ./artifacts
+
+      - name: List downloaded files
+        run: find ./artifacts -type f
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Lyrix v${{ needs.preparation.outputs.version }}
+          tag_name: v${{ needs.preparation.outputs.version }}
+          body: |
+            ## Lyrix v${{ needs.preparation.outputs.version }}
+
+            ${{ needs.preparation.outputs.is_beta == 'true' && '### Beta Release' || '### Stable Release' }}
+
+            **Build Number:** ${{ needs.preparation.outputs.build_number }}
+
+            ---
+
+            ### Installation (Unsigned App)
+
+            Since this app is **unsigned** (no Apple Developer certificate), you'll need to bypass macOS Gatekeeper:
+
+            1. **Download** the DMG file below
+            2. **Open** the DMG and drag Lyrix to Applications
+            3. **First Launch:** The app will be blocked with a security warning
+            4. Go to **System Settings** → **Privacy & Security**
+            5. Scroll down to find "Lyrix was blocked"
+            6. Click **"Open Anyway"**
+            7. Confirm you want to open it
+
+            You only need to do this **once**. After that, the app will open normally.
+
+            ---
+
+            ### Why is this app unsigned?
+
+            This is an open-source project distributed without an Apple Developer account ($99/year). The app is safe to use - you can verify the source code and build it yourself if preferred.
+
+            ### Verify the build
+
+            - **Commit:** ${{ github.sha }}
+            - **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          files: ./artifacts/${{ env.APP_NAME }}.dmg
+          prerelease: ${{ needs.preparation.outputs.is_beta == 'true' }}
+          draft: false
+
+  finalize:
+    name: Finalize Release
+    needs: [preparation, build, release]
+    runs-on: ubuntu-latest
+    # Only run if preparation actually ran (not skipped due to non-release comment)
+    if: always() && needs.preparation.result != 'skipped'
+    steps:
+      - name: Add success reaction
+        if: |
+          github.event_name == 'issue_comment' &&
+          needs.preparation.result == 'success' &&
+          needs.build.result == 'success' &&
+          needs.release.result == 'success'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: rocket
+
+      - name: Add failure reaction
+        if: |
+          github.event_name == 'issue_comment' &&
+          needs.preparation.result != 'skipped' &&
+          (needs.preparation.result == 'failure' || needs.build.result == 'failure' || needs.release.result == 'failure')
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: confused
+
+      - name: Create summary
+        if: needs.preparation.result == 'success'
+        run: |
+          if [[ "${{ needs.release.result }}" == "success" ]]; then
+            echo "Successfully released Lyrix v${{ needs.preparation.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+            echo "Build ${{ needs.preparation.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+            echo "https://github.com/${{ github.repository }}/releases/tag/v${{ needs.preparation.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Release failed for Lyrix v${{ needs.preparation.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -21,12 +21,36 @@ A macOS app that displays synchronized lyrics from Spotify and Apple Music in a 
 
 4. **Floating Display** - Lyrics are shown in a floating window that stays on top of other apps, with smooth animations as lines change.
 
+## Installation
+
+### Download
+
+1. Go to [Releases](../../releases) and download the latest `lyrix.dmg`
+2. Open the DMG file
+3. Drag **Lyrix** to your **Applications** folder
+
+### First Launch (Important)
+
+Since Lyrix is distributed **unsigned** (no Apple Developer certificate), macOS will block it on first launch. Here's how to open it:
+
+1. **Try to open Lyrix** - You'll see "Lyrix cannot be opened because it is from an unidentified developer"
+2. Open **System Settings** → **Privacy & Security**
+3. Scroll down to find **"Lyrix was blocked from use because it is not from an identified developer"**
+4. Click **"Open Anyway"**
+5. Click **"Open"** in the confirmation dialog
+
+You only need to do this **once**. After that, Lyrix will open normally.
+
+### First Run Permissions
+
+On first launch, Lyrix will ask for **Automation permissions** to control Spotify/Apple Music. Click "OK" to allow - this is required for lyrics sync to work.
+
 ## Requirements
 
 - macOS 13.0 or later
 - Spotify or Apple Music
 
-## Building
+## Building from Source
 
 Open `lyrix.xcodeproj` in Xcode and build the project (Cmd+B), or from the terminal:
 

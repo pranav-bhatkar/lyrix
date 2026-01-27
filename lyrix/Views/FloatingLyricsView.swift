@@ -179,38 +179,60 @@ struct SlideUpView: View {
     let lyrics: Lyrics
     let currentIndex: Int?
     let settings: LyricsSettings
-    
+
+    // Calculate number of visible lines based on settings
+    private var visibleLineCount: Int {
+        var count = 1 // Current line is always visible
+        if settings.showPreviousLine { count += 1 }
+        if settings.showNextLine { count += 1 }
+        return count
+    }
+
+    // Calculate the offset for centering based on which lines are visible
+    private var centeringOffset: CGFloat {
+        if settings.showPreviousLine && settings.showNextLine {
+            return 1 // Center position (prev, CURRENT, next)
+        } else if settings.showPreviousLine {
+            return 1 // Show at bottom (prev, CURRENT)
+        } else if settings.showNextLine {
+            return 0 // Show at top (CURRENT, next)
+        } else {
+            return 0 // Only current line
+        }
+    }
+
     var body: some View {
         let currentIdx = currentIndex ?? -1
         let spacing = settings.lineSpacing
         let lineHeight = settings.lineHeight
         let totalLineHeight = lineHeight + spacing
-        
+        let frameHeight = totalLineHeight * CGFloat(visibleLineCount) - spacing
+
         GeometryReader { geo in
             VStack(spacing: spacing) {
                 // Intro placeholder
                 lineView(text: "♪ ♪ ♪", isCurrent: currentIdx == -1, isPast: false, height: lineHeight)
                     .frame(height: lineHeight)
                     .opacity(currentIdx == -1 || settings.showPreviousLine ? 1 : 0)
-                
+
                 ForEach(Array(lyrics.lines.enumerated()), id: \.element.id) { index, line in
                     let isCurrent = index == currentIdx
                     let isPast = index < currentIdx
                     let isVisible = isCurrent || (isPast && settings.showPreviousLine) || (!isPast && settings.showNextLine)
-                    
+
                     lineView(text: line.text, isCurrent: isCurrent, isPast: isPast, height: lineHeight)
                         .frame(height: lineHeight)
                         .opacity(isVisible ? 1 : 0)
                 }
             }
             .frame(width: geo.size.width)
-            .offset(y: -CGFloat(currentIdx + 1) * totalLineHeight + totalLineHeight)
+            .offset(y: -CGFloat(currentIdx + 1) * totalLineHeight + totalLineHeight * centeringOffset)
         }
-        .frame(height: totalLineHeight * 3 - spacing)
+        .frame(height: frameHeight)
         .clipped()
         .animation(.spring(response: settings.animationDuration, dampingFraction: 0.82), value: currentIndex)
     }
-    
+
     private func lineView(text: String, isCurrent: Bool, isPast: Bool, height: CGFloat) -> some View {
         Text(text)
             .font(isCurrent ? settings.currentLineFont : settings.dimmedFont)
@@ -527,7 +549,7 @@ class FloatingLyricsWindowController: NSWindowController {
     
     func show() {
         window?.alphaValue = 0
-        window?.orderFront(nil)
+        window?.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.25
             window?.animator().alphaValue = 1
@@ -550,22 +572,30 @@ class FloatingLyricsWindowController: NSWindowController {
 
 // MARK: - Floating Window
 
-class FloatingLyricsWindow: NSWindow {
+class FloatingLyricsWindow: NSPanel {
     init() {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 550, height: 150),
-            styleMask: [.borderless, .fullSizeContentView],
+            styleMask: [.borderless, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
-        
+
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         isMovableByWindowBackground = true
+
+        // Prevent this panel from activating the app
+        hidesOnDeactivate = false
+        becomesKeyOnlyIfNeeded = true
     }
+
+    // Allow the panel to receive key events for buttons without activating the app
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
 }
 
 // MARK: - Manager
