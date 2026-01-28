@@ -9,178 +9,198 @@ import SwiftUI
 
 struct CustomizationView: View {
     @ObservedObject var settings = LyricsSettings.shared
-    
+    @State private var selectedTab = 0
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Live Preview Card
-                previewSection
-                    .padding(.top, 8)
-                
-                VStack(spacing: 20) {
-                    // Appearance & Theme
-                    CustomSection(title: "Appearance", icon: "paintpalette") {
-                        VStack(spacing: 20) {
-                            themeGrid
-                            
-                            Divider()
-                            
-                            HStack(alignment: .bottom) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Window Glow")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Toggle("Enable Glow", isOn: $settings.showGlow)
-                                        .toggleStyle(.switch)
-                                        .labelsHidden()
-                                }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing, spacing: 8) {
-                                    Text("Corner Radius")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    HStack(spacing: 12) {
-                                        Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
-                                            .frame(width: 120)
-                                        Text("\(Int(settings.customCornerRadius))px")
-                                            .font(.caption.monospacedDigit())
-                                            .foregroundColor(.primary.opacity(0.8))
-                                            .frame(width: 35, alignment: .trailing)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Typography
-                    CustomSection(title: "Typography", icon: "textformat") {
-                        VStack(spacing: 16) {
-                            // Font Family Preview Grid
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Font Family")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+        VStack(spacing: 0) {
+            // Live Preview Card - always visible
+            previewSection
+                .padding(.top, 12)
+                .padding(.bottom, 16)
 
-                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                                    ForEach(FontOption.allCases, id: \.self) { font in
-                                        FontPreviewButton(
-                                            font: font,
-                                            isSelected: settings.fontName == font.id,
-                                            action: { settings.fontName = font.id }
-                                        )
-                                    }
-                                }
-                            }
+            // Tab Picker
+            Picker("", selection: $selectedTab) {
+                Text("Quick Setup").tag(0)
+                Text("Advanced").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
 
-                            Divider()
-
-                            // Size Presets
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Size")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                                HStack(spacing: 10) {
-                                    ForEach(FontSizePreset.allCases, id: \.self) { preset in
-                                        FontSizeButton(
-                                            preset: preset,
-                                            isSelected: Int(settings.fontSize) == preset.size,
-                                            action: { settings.fontSize = Double(preset.size) }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Layout & Size
-                    CustomSection(title: "Window Layout", icon: "macwindow") {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(spacing: 12) {
-                                ForEach(LyricsWindowSize.allCases, id: \.self) { size in
-                                    SizeButton(
-                                        size: size,
-                                        isSelected: settings.windowSize == size.rawValue,
-                                        action: { settings.windowSize = size.rawValue }
-                                    )
-                                }
-                            }
-                            
-                            Toggle(isOn: $settings.showPlayerInFloating) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Music Player Overlay")
-                                        .font(.subheadline)
-                                    Text("Show playback controls and song info")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .toggleStyle(.switch)
-                        }
-                    }
-                    
-                    // Motion
-                    CustomSection(title: "Motion", icon: "wand.and.stars") {
-                        VStack(spacing: 16) {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(LyricsAnimationStyle.allCases, id: \.self) { style in
-                                        AnimationButton(
-                                            style: style,
-                                            isSelected: settings.animationStyle == style.rawValue,
-                                            action: { settings.animationStyle = style.rawValue }
-                                        )
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                            
-                            VStack(spacing: 12) {
-                                HStack(alignment: .bottom) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Animation Speed")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Picker("Speed", selection: $settings.animationSpeed) {
-                                            Text("Slow").tag("Slow")
-                                            Text("Normal").tag("Normal")
-                                            Text("Fast").tag("Fast")
-                                        }
-                                        .pickerStyle(.segmented)
-                                        .labelsHidden()
-                                        .frame(width: 180)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if settings.animationStyle == "Slide Up" {
-                                        VStack(alignment: .trailing, spacing: 6) {
-                                            Text("Show Lines")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            
-                                            HStack(spacing: 16) {
-                                                Toggle("Prev", isOn: $settings.showPreviousLine)
-                                                Toggle("Next", isOn: $settings.showNextLine)
-                                            }
-                                            .toggleStyle(.checkbox)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+            // Tab Content
+            ScrollView {
+                if selectedTab == 0 {
+                    quickSetupContent
+                } else {
+                    advancedContent
                 }
-                .padding(.horizontal, 24)
-                
-                Spacer(minLength: 32)
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    // MARK: - Quick Setup Tab
+
+    private var quickSetupContent: some View {
+        VStack(spacing: 20) {
+            // Theme Selection
+            CustomSection(title: "Theme", icon: "paintpalette") {
+                themeGrid
+            }
+
+            // Typography
+            CustomSection(title: "Typography", icon: "textformat") {
+                VStack(spacing: 16) {
+                    // Font Family Preview Grid
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        ForEach(FontOption.allCases, id: \.self) { font in
+                            FontPreviewButton(
+                                font: font,
+                                isSelected: settings.fontName == font.id,
+                                action: { settings.fontName = font.id }
+                            )
+                        }
+                    }
+
+                    Divider()
+
+                    // Size Presets
+                    HStack(spacing: 10) {
+                        ForEach(FontSizePreset.allCases, id: \.self) { preset in
+                            FontSizeButton(
+                                preset: preset,
+                                isSelected: Int(settings.fontSize) == preset.size,
+                                action: { settings.fontSize = Double(preset.size) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Window Size
+            CustomSection(title: "Window Size", icon: "macwindow") {
+                HStack(spacing: 12) {
+                    ForEach(LyricsWindowSize.allCases, id: \.self) { size in
+                        SizeButton(
+                            size: size,
+                            isSelected: settings.windowSize == size.rawValue,
+                            action: { settings.windowSize = size.rawValue }
+                        )
+                    }
+                }
+            }
+
+            // Animation Style
+            CustomSection(title: "Animation", icon: "wand.and.stars") {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(LyricsAnimationStyle.allCases, id: \.self) { style in
+                            AnimationButton(
+                                style: style,
+                                isSelected: settings.animationStyle == style.rawValue,
+                                action: { settings.animationStyle = style.rawValue }
+                            )
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
+            Spacer(minLength: 32)
+        }
+        .padding(.horizontal, 24)
+    }
+
+    // MARK: - Advanced Tab
+
+    private var advancedContent: some View {
+        VStack(spacing: 20) {
+            // Appearance Details
+            CustomSection(title: "Appearance", icon: "paintpalette") {
+                VStack(spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Window Glow")
+                                .font(.subheadline)
+                            Text("Add a subtle glow around lyrics")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $settings.showGlow)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Corner Radius")
+                            .font(.subheadline)
+                        HStack(spacing: 12) {
+                            Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
+                            Text("\(Int(settings.customCornerRadius))px")
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                                .frame(width: 40, alignment: .trailing)
+                        }
+                    }
+                }
+            }
+
+            // Layout Options
+            CustomSection(title: "Layout", icon: "macwindow") {
+                VStack(spacing: 16) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Music Player Overlay")
+                                .font(.subheadline)
+                            Text("Show playback controls and song info")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Toggle("", isOn: $settings.showPlayerInFloating)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                }
+            }
+
+            // Animation Details
+            CustomSection(title: "Animation", icon: "wand.and.stars") {
+                VStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Animation Speed")
+                            .font(.subheadline)
+                        Picker("Speed", selection: $settings.animationSpeed) {
+                            Text("Slow").tag("Slow")
+                            Text("Normal").tag("Normal")
+                            Text("Fast").tag("Fast")
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+
+                    if settings.animationStyle == "Slide Up" {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Visible Lines")
+                                .font(.subheadline)
+                            HStack(spacing: 24) {
+                                Toggle("Show Previous", isOn: $settings.showPreviousLine)
+                                Toggle("Show Next", isOn: $settings.showNextLine)
+                            }
+                            .toggleStyle(.checkbox)
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 32)
+        }
+        .padding(.horizontal, 24)
     }
     
     // MARK: - Components
