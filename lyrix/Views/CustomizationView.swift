@@ -180,7 +180,9 @@ struct CustomizationView: View {
                         }
                         .pickerStyle(.segmented)
                         .labelsHidden()
+                        .frame(maxWidth: .infinity)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     if settings.animationStyle == "Slide Up" {
                         Divider()
