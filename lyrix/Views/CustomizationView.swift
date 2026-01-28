@@ -301,8 +301,10 @@ struct ThemeButton: View {
     private var colors: [Color] {
         switch theme {
         case .dark: return [Color(white: 0.15), Color(white: 0.1)]
-        case .light: return [Color(white: 0.95), Color(white: 0.9)]
-        case .neon: return [Color(red: 0.1, green: 0.05, blue: 0.2), Color(red: 0, green: 0.3, blue: 0.3)]
+        case .light: return [Color(white: 0.96), Color(white: 0.92)]
+        case .subtle: return [Color(red: 0.14, green: 0.14, blue: 0.16), Color(red: 0.1, green: 0.1, blue: 0.12)]
+        case .warm: return [Color(red: 0.18, green: 0.12, blue: 0.1), Color(red: 0.12, green: 0.08, blue: 0.06)]
+        case .cool: return [Color(red: 0.1, green: 0.12, blue: 0.18), Color(red: 0.06, green: 0.08, blue: 0.14)]
         case .minimal: return [Color.black.opacity(0.8), Color.black.opacity(0.6)]
         case .transparent: return [Color.clear, Color.clear]
         }

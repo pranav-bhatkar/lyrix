@@ -29,7 +29,9 @@ enum LyricsWindowSize: String, CaseIterable {
 enum LyricsTheme: String, CaseIterable {
     case dark = "Dark"
     case light = "Light"
-    case neon = "Neon"
+    case subtle = "Subtle"
+    case warm = "Warm"
+    case cool = "Cool"
     case minimal = "Minimal"
     case transparent = "Transparent"
 }
@@ -83,49 +85,57 @@ class LyricsSettings: ObservableObject {
     
     var backgroundColor: Color {
         switch theme {
-        case "Light": return Color(white: 0.95)
-        case "Neon": return Color(red: 0.05, green: 0.02, blue: 0.15)
+        case "Light": return Color(white: 0.96)
+        case "Subtle": return Color(red: 0.12, green: 0.12, blue: 0.14)
+        case "Warm": return Color(red: 0.15, green: 0.1, blue: 0.08)
+        case "Cool": return Color(red: 0.08, green: 0.1, blue: 0.15)
         case "Minimal": return Color.black
         case "Transparent": return .clear
         default: return Color(white: 0.1)
         }
     }
-    
+
     var backgroundOpacity: Double {
         switch theme {
         case "Minimal": return 0.6
         case "Transparent": return 0
+        case "Subtle", "Warm", "Cool": return 0.92
         default: return 0.85
         }
     }
-    
+
     var currentLineColor: Color {
         switch theme {
         case "Light": return .black
-        case "Neon": return Color(red: 0, green: 1, blue: 0.8)
+        case "Subtle": return Color(white: 0.95)
+        case "Warm": return Color(red: 1.0, green: 0.85, blue: 0.7)
+        case "Cool": return Color(red: 0.75, green: 0.9, blue: 1.0)
         case "Minimal", "Transparent": return .white
         default: return .white
         }
     }
-    
+
     var dimmedColor: Color {
         switch theme {
-        case "Light": return Color(white: 0.4)
-        case "Neon": return Color(red: 0.4, green: 0.5, blue: 0.6)
+        case "Light": return Color(white: 0.45)
+        case "Subtle": return Color(white: 0.45)
+        case "Warm": return Color(red: 0.6, green: 0.5, blue: 0.4)
+        case "Cool": return Color(red: 0.4, green: 0.5, blue: 0.6)
         case "Minimal", "Transparent": return Color(white: 0.5)
         default: return Color(white: 0.55)
         }
     }
-    
+
     var glowColor: Color {
         switch theme {
-        case "Neon": return Color(red: 0, green: 1, blue: 0.8)
-        case "Light": return .clear
-        case "Transparent": return .clear
+        case "Subtle": return Color(white: 0.6)
+        case "Warm": return Color(red: 1.0, green: 0.6, blue: 0.3)
+        case "Cool": return Color(red: 0.4, green: 0.7, blue: 1.0)
+        case "Light", "Transparent": return .clear
         default: return currentLineColor
         }
     }
-    
+
     var blurEnabled: Bool {
         theme != "Minimal" && theme != "Transparent"
     }
