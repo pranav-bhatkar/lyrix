@@ -58,30 +58,38 @@ struct CustomizationView: View {
                     // Typography
                     CustomSection(title: "Typography", icon: "textformat") {
                         VStack(spacing: 16) {
-                            HStack(spacing: 20) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Font Family")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Picker("Font Family", selection: $settings.fontName) {
-                                        Text("Sans").tag("Default")
-                                        Text("Serif").tag("Serif")
-                                        Text("Rounded").tag("Rounded")
-                                        Text("Mono").tag("Monospaced")
+                            // Font Family Preview Grid
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Font Family")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                                    ForEach(FontOption.allCases, id: \.self) { font in
+                                        FontPreviewButton(
+                                            font: font,
+                                            isSelected: settings.fontName == font.id,
+                                            action: { settings.fontName = font.id }
+                                        )
                                     }
-                                    .pickerStyle(.segmented)
-                                    .labelsHidden()
                                 }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Size")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    HStack {
-                                        Slider(value: $settings.fontSize, in: 14...32, step: 1)
-                                        Text("\(Int(settings.fontSize))pt")
-                                            .font(.caption.monospacedDigit())
-                                            .frame(width: 35)
+                            }
+
+                            Divider()
+
+                            // Size Presets
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Size")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                HStack(spacing: 10) {
+                                    ForEach(FontSizePreset.allCases, id: \.self) { preset in
+                                        FontSizeButton(
+                                            preset: preset,
+                                            isSelected: Int(settings.fontSize) == preset.size,
+                                            action: { settings.fontSize = Double(preset.size) }
+                                        )
                                     }
                                 }
                             }
@@ -440,6 +448,121 @@ struct AnimationButton: View {
         .buttonStyle(.plain)
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+// MARK: - Font Options
+
+enum FontOption: String, CaseIterable {
+    case sans = "Sans"
+    case serif = "Serif"
+    case rounded = "Rounded"
+    case mono = "Mono"
+
+    var id: String {
+        switch self {
+        case .sans: return "Default"
+        case .serif: return "Serif"
+        case .rounded: return "Rounded"
+        case .mono: return "Monospaced"
+        }
+    }
+
+    var font: Font {
+        switch self {
+        case .sans: return .system(size: 14, weight: .semibold, design: .default)
+        case .serif: return .system(size: 14, weight: .semibold, design: .serif)
+        case .rounded: return .system(size: 14, weight: .semibold, design: .rounded)
+        case .mono: return .system(size: 14, weight: .semibold, design: .monospaced)
+        }
+    }
+}
+
+enum FontSizePreset: String, CaseIterable {
+    case small = "S"
+    case medium = "M"
+    case large = "L"
+    case extraLarge = "XL"
+
+    var size: Int {
+        switch self {
+        case .small: return 16
+        case .medium: return 20
+        case .large: return 24
+        case .extraLarge: return 28
+        }
+    }
+
+    var label: String {
+        "\(size)pt"
+    }
+}
+
+// MARK: - Font Preview Button
+
+struct FontPreviewButton: View {
+    let font: FontOption
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
+                        .frame(height: 44)
+
+                    Text("Lyrics")
+                        .font(font.font)
+                        .foregroundColor(isSelected ? .accentColor : .primary.opacity(0.8))
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: isSelected ? 2 : 1)
+                )
+
+                Text(font.rawValue)
+                    .font(.caption2)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Font Size Button
+
+struct FontSizeButton: View {
+    let preset: FontSizePreset
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Text(preset.rawValue)
+                    .font(.headline)
+                    .fontWeight(isSelected ? .bold : .medium)
+                    .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.1))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(isSelected ? Color.clear : Color.secondary.opacity(0.15), lineWidth: 1)
+                    )
+
+                Text(preset.label)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
     }
 }
 
