@@ -15,263 +15,105 @@ struct CustomizationView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                // Live Preview Card
-                previewSection
-                    .padding(.top, 8)
-                
-                VStack(spacing: 20) {
-                    // Appearance & Theme
-                    CustomSection(title: "Appearance", icon: "paintpalette") {
-                        VStack(spacing: 20) {
-                            themeGrid
-                            
-                            Divider()
-                            
-                            HStack(alignment: .bottom) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Window Glow")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Toggle("Enable Glow", isOn: $settings.showGlow)
-                                        .toggleStyle(.switch)
-                                        .labelsHidden()
-                                }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing, spacing: 8) {
-                                    Text("Corner Radius")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    HStack(spacing: 12) {
-                                        Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
-                                            .frame(width: 120)
-                                        Text("\(Int(settings.customCornerRadius))px")
-                                            .font(.caption.monospacedDigit())
-                                            .foregroundColor(.primary.opacity(0.8))
-                                            .frame(width: 35, alignment: .trailing)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Typography
-                    CustomSection(title: "Typography", icon: "textformat") {
-                        VStack(spacing: 16) {
-                            // Font Family
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Font Family")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Picker("Font Family", selection: $settings.fontName) {
-                                    Text("Sans").tag("Default")
-                                    Text("Serif").tag("Serif")
-                                    Text("Rounded").tag("Rounded")
-                                    Text("Mono").tag("Monospaced")
-                                }
-                                .pickerStyle(.segmented)
-                                .labelsHidden()
-                            }
+            VStack(spacing: 28) {
+                // Preview
+                VStack(spacing: 8) {
+                    Text("Preview")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
 
-                            Divider()
-
-                            // Font Size Presets
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Text Size")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                                HStack(spacing: 10) {
-                                    ForEach(FontSizePreset.allCases, id: \.self) { preset in
-                                        FontSizeButton(
-                                            preset: preset,
-                                            isSelected: settings.fontSizePreset == preset.rawValue,
-                                            action: {
-                                                settings.fontSizePreset = preset.rawValue
-                                                settings.fontSize = preset.size
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Layout & Size
-                    CustomSection(title: "Window Layout", icon: "macwindow") {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack(spacing: 12) {
-                                ForEach(LyricsWindowSize.allCases, id: \.self) { size in
-                                    SizeButton(
-                                        size: size,
-                                        isSelected: settings.windowSize == size.rawValue,
-                                        action: { settings.windowSize = size.rawValue }
-                                    )
-                                }
-                            }
-                            
-                            Toggle(isOn: $settings.showPlayerInFloating) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Music Player Overlay")
-                                        .font(.subheadline)
-                                    Text("Show playback controls and song info")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .toggleStyle(.switch)
-                        }
-                    }
-                    
-                    // Motion
-                    CustomSection(title: "Motion", icon: "wand.and.stars") {
-                        VStack(spacing: 16) {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    ForEach(LyricsAnimationStyle.allCases, id: \.self) { style in
-                                        AnimationButton(
-                                            style: style,
-                                            isSelected: settings.animationStyle == style.rawValue,
-                                            action: { settings.animationStyle = style.rawValue }
-                                        )
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-
-                            VStack(spacing: 12) {
-                                HStack(alignment: .bottom) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Animation Speed")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-
-                                        Picker("Speed", selection: $settings.animationSpeed) {
-                                            Text("Slow").tag("Slow")
-                                            Text("Normal").tag("Normal")
-                                            Text("Fast").tag("Fast")
-                                        }
-                                        .pickerStyle(.segmented)
-                                        .labelsHidden()
-                                        .frame(width: 180)
-                                    }
-
-                                    Spacer()
-
-                                    if settings.animationStyle == "Slide Up" {
-                                        VStack(alignment: .trailing, spacing: 6) {
-                                            Text("Show Lines")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-
-                                            HStack(spacing: 16) {
-                                                Toggle("Prev", isOn: $settings.showPreviousLine)
-                                                Toggle("Next", isOn: $settings.showNextLine)
-                                            }
-                                            .toggleStyle(.checkbox)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Keyboard Shortcuts
-                    CustomSection(title: "Keyboard Shortcuts", icon: "keyboard") {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Toggle(isOn: Binding(
-                                get: { KeyboardShortcutManager.shared.shortcutsEnabled },
-                                set: { enabled in
-                                    KeyboardShortcutManager.shared.shortcutsEnabled = enabled
-                                    if enabled {
-                                        KeyboardShortcutManager.shared.startMonitoring()
-                                    } else {
-                                        KeyboardShortcutManager.shared.stopMonitoring()
-                                    }
-                                }
-                            )) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Enable Global Shortcuts")
-                                        .font(.subheadline)
-                                    Text("Control Lyrix from anywhere")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .toggleStyle(.switch)
-
-                            if KeyboardShortcutManager.shared.shortcutsEnabled {
-                                Divider()
-
-                                VStack(alignment: .leading, spacing: 12) {
-                                    shortcutRow("Toggle Overlay", shortcut: "⌥⌘L")
-                                    shortcutRow("Play / Pause", shortcut: "⌥⌘P")
-                                    shortcutRow("Next Track", shortcut: "⌥⌘→")
-                                    shortcutRow("Previous Track", shortcut: "⌥⌘←")
-                                    shortcutRow("Skip +10s", shortcut: "⌥⌘.")
-                                    shortcutRow("Skip -10s", shortcut: "⌥⌘,")
-                                }
-                            }
-                        }
-                    }
-
-                    // Notifications
-                    CustomSection(title: "Notifications", icon: "bell") {
-                        HStack {
-                            Toggle(isOn: $settings.showNowPlayingNotification) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Now Playing Notification")
-                                        .font(.subheadline)
-                                    Text("Show a notification when the song changes")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .toggleStyle(.switch)
-                            Spacer()
-                        }
-                    }
+                    lyricsPreview
                 }
-                .padding(.horizontal, 24)
+                .padding(.top, 8)
 
-                Spacer(minLength: 32)
+                // All Settings
+                VStack(spacing: 24) {
+                    themeSection
+                    Divider()
+                    fontSection
+                    Divider()
+                    sizeSection
+                    Divider()
+                    animationSection
+                    Divider()
+                    optionsSection
+                    Divider()
+                    keyboardShortcutsSection
+                    Divider()
+                    notificationsSection
+                }
+                .padding(.horizontal, 20)
+
+                Spacer(minLength: 40)
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    private func shortcutRow(_ action: String, shortcut: String) -> some View {
-        HStack {
-            Text(action)
-                .font(.subheadline)
-            Spacer()
-            Text(shortcut)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.secondary.opacity(0.15))
-                .cornerRadius(6)
+    // MARK: - Preview
+
+    private var lyricsPreview: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: settings.cornerRadius)
+                .fill(settings.isTransparent ? Color.secondary.opacity(0.1) : settings.backgroundColor)
+                .overlay(
+                    Group {
+                        if settings.blurEnabled && !settings.isTransparent {
+                            RoundedRectangle(cornerRadius: settings.cornerRadius)
+                                .fill(.ultraThinMaterial)
+                                .opacity(0.5)
+                        }
+                    }
+                )
+
+            VStack(spacing: settings.lineSpacing + 4) {
+                if settings.showPreviousLine {
+                    Text("And I know you're not afraid")
+                        .font(settings.dimmedFont)
+                        .foregroundColor(settings.dimmedColor)
+                }
+
+                Text("To look into my eyes")
+                    .font(settings.currentLineFont)
+                    .foregroundColor(settings.currentLineColor)
+                    .shadow(
+                        color: settings.showGlow ? settings.glowColor.opacity(0.6) : .clear,
+                        radius: 12
+                    )
+
+                if settings.showNextLine {
+                    Text("We were dancing all night")
+                        .font(settings.dimmedFont)
+                        .foregroundColor(settings.dimmedColor)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.vertical, 24)
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 150)
+        .clipShape(RoundedRectangle(cornerRadius: settings.cornerRadius))
+        .shadow(color: .black.opacity(0.12), radius: 12, y: 6)
+        .padding(.horizontal, 20)
     }
 
-    // MARK: - Components
-    
-    private var themeGrid: some View {
-        VStack(spacing: 16) {
+    // MARK: - Theme
+
+    private var themeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Theme")
+                .font(.headline)
+
             // Built-in themes (excluding Custom)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 120))], spacing: 12) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
                 ForEach(LyricsTheme.allCases.filter { $0 != .custom }, id: \.self) { theme in
-                    ThemeButton(
+                    ThemeCard(
                         theme: theme,
-                        isSelected: settings.theme == theme.rawValue && settings.theme != "Custom",
-                        action: {
-                            settings.theme = theme.rawValue
-                            themeManager.setActiveTheme(nil)
-                        }
-                    )
+                        isSelected: settings.theme == theme.rawValue && settings.theme != "Custom"
+                    ) {
+                        settings.theme = theme.rawValue
+                        themeManager.setActiveTheme(nil)
+                    }
                 }
             }
 
@@ -284,7 +126,7 @@ struct CustomizationView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
 
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 80, maximum: 120))], spacing: 12) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
                         ForEach(themeManager.themes) { theme in
                             CustomThemeButton(
                                 theme: theme,
@@ -321,166 +163,353 @@ struct CustomizationView: View {
             ThemeBuilderView(theme: editingTheme)
         }
     }
-    
-    private var previewSection: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                // Desktop-like background
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(height: 180)
-                    .overlay(
-                        Circle()
-                            .fill(Color.orange.opacity(0.1))
-                            .frame(width: 100)
-                            .blur(radius: 40)
-                            .offset(x: 100, y: -40)
-                    )
-                
-                // Floating Lyrics Window Mockup
-                ZStack {
-                    if !settings.isTransparent {
-                        if settings.blurEnabled {
-                            RoundedRectangle(cornerRadius: settings.cornerRadius)
-                                .fill(.ultraThinMaterial)
-                        }
-                        
-                        RoundedRectangle(cornerRadius: settings.cornerRadius)
-                            .fill(settings.backgroundColor.opacity(settings.backgroundOpacity))
-                    }
-                    
-                    VStack(spacing: settings.lineSpacing) {
-                        previewLine("Previous lyrics line", isCurrent: false, opacity: 0.3)
-                        previewLine("♪ Current lyrics line ♪", isCurrent: true, opacity: 1.0)
-                        previewLine("Next lyrics line", isCurrent: false, opacity: 0.4)
-                    }
-                    .padding(.horizontal, settings.horizontalPadding * 0.6)
-                    .padding(.vertical, settings.verticalPadding * 0.6)
-                }
-                .frame(width: 280)
-                .fixedSize()
-                .clipShape(RoundedRectangle(cornerRadius: settings.cornerRadius))
-                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-                .scaleEffect(0.9)
-            }
-            .padding(.horizontal, 24)
-            
-            Text("Preview")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-    
-    private func previewLine(_ text: String, isCurrent: Bool, opacity: Double) -> some View {
-        Text(text)
-            .font(isCurrent ? settings.currentLineFont : settings.dimmedFont)
-            .foregroundColor(isCurrent ? settings.currentLineColor : settings.dimmedColor)
-            .opacity(isCurrent ? 1.0 : opacity)
-            .shadow(
-                color: isCurrent && settings.showGlow ? settings.glowColor.opacity(0.5) : .clear,
-                radius: 10
-            )
-            .multilineTextAlignment(.center)
-            .lineLimit(1)
-    }
-}
 
-// MARK: - Helpers
+    // MARK: - Font
 
-struct CustomSection<Content: View>: View {
-    let title: String
-    let icon: String
-    let content: Content
-    
-    init(title: String, icon: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.icon = icon
-        self.content = content()
-    }
-    
-    var body: some View {
+    private var fontSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: icon)
-                .font(.subheadline.bold())
-                .foregroundColor(.primary.opacity(0.8))
-            
-            VStack {
-                content
+            Text("Font")
+                .font(.headline)
+
+            HStack(spacing: 10) {
+                ForEach(FontOption.allCases, id: \.self) { font in
+                    Button {
+                        settings.fontName = font.id
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text("Lyrics")
+                                .font(.system(size: 15, weight: .semibold, design: font.design))
+                                .frame(height: 40)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(settings.fontName == font.id ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                )
+                                .foregroundColor(settings.fontName == font.id ? .white : .primary)
+
+                            Text(font.rawValue)
+                                .font(.caption)
+                                .foregroundColor(settings.fontName == font.id ? .accentColor : .secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .padding(16)
-            .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-            )
+        }
+    }
+
+    // MARK: - Size
+
+    private var sizeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Font Size")
+                    .font(.headline)
+                Spacer()
+                Text("\(Int(settings.fontSize))pt")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+
+            HStack(spacing: 10) {
+                ForEach(FontSizePreset.allCases, id: \.self) { preset in
+                    Button {
+                        settings.fontSizePreset = preset.rawValue
+                        settings.fontSize = preset.size
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(preset.rawValue)
+                                .font(.headline)
+                            Text("\(Int(preset.size))pt")
+                                .font(.caption2)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(settings.fontSizePreset == preset.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                        )
+                        .foregroundColor(settings.fontSizePreset == preset.rawValue ? .white : .primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    // MARK: - Animation
+
+    private var animationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Animation Style")
+                .font(.headline)
+
+            // Style picker
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                ForEach(LyricsAnimationStyle.allCases, id: \.self) { style in
+                    Button {
+                        settings.animationStyle = style.rawValue
+                    } label: {
+                        Text(style.shortName)
+                            .font(.subheadline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(settings.animationStyle == style.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            )
+                            .foregroundColor(settings.animationStyle == style.rawValue ? .white : .primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            // Speed
+            HStack {
+                Text("Speed")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Picker("", selection: $settings.animationSpeed) {
+                    Text("Slow").tag("Slow")
+                    Text("Normal").tag("Normal")
+                    Text("Fast").tag("Fast")
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    // MARK: - Options
+
+    private var optionsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Options")
+                .font(.headline)
+
+            // Window Size
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Window Width")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+
+                HStack(spacing: 10) {
+                    ForEach(LyricsWindowSize.allCases, id: \.self) { size in
+                        Button {
+                            settings.windowSize = size.rawValue
+                        } label: {
+                            Text(size.rawValue)
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(settings.windowSize == size.rawValue ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                )
+                                .foregroundColor(settings.windowSize == size.rawValue ? .white : .primary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            // Corner Radius
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Corner Radius")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(settings.customCornerRadius))px")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
+                }
+                Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
+            }
+
+            // Toggles
+            VStack(spacing: 12) {
+                Toggle(isOn: $settings.showGlow) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Glow Effect")
+                            .font(.subheadline)
+                        Text("Adds subtle glow behind current line")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Toggle(isOn: $settings.showPlayerInFloating) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Player Controls")
+                            .font(.subheadline)
+                        Text("Show playback controls on floating window")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if settings.animationStyle == "Slide Up" {
+                    Divider()
+
+                    HStack {
+                        Text("Show Lines")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Toggle("Previous", isOn: $settings.showPreviousLine)
+                        Toggle("Next", isOn: $settings.showNextLine)
+                    }
+                    .toggleStyle(.checkbox)
+                }
+            }
+        }
+    }
+
+    // MARK: - Keyboard Shortcuts
+
+    private var keyboardShortcutsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Keyboard Shortcuts")
+                .font(.headline)
+
+            Toggle(isOn: Binding(
+                get: { KeyboardShortcutManager.shared.shortcutsEnabled },
+                set: { enabled in
+                    KeyboardShortcutManager.shared.shortcutsEnabled = enabled
+                    if enabled {
+                        KeyboardShortcutManager.shared.startMonitoring()
+                    } else {
+                        KeyboardShortcutManager.shared.stopMonitoring()
+                    }
+                }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Enable Global Shortcuts")
+                        .font(.subheadline)
+                    Text("Control Lyrix from anywhere")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+
+            if KeyboardShortcutManager.shared.shortcutsEnabled {
+                Divider()
+
+                VStack(alignment: .leading, spacing: 12) {
+                    shortcutRow("Toggle Overlay", shortcut: "⌥⌘L")
+                    shortcutRow("Play / Pause", shortcut: "⌥⌘P")
+                    shortcutRow("Next Track", shortcut: "⌥⌘→")
+                    shortcutRow("Previous Track", shortcut: "⌥⌘←")
+                    shortcutRow("Skip +10s", shortcut: "⌥⌘.")
+                    shortcutRow("Skip -10s", shortcut: "⌥⌘,")
+                }
+            }
+        }
+    }
+
+    // MARK: - Notifications
+
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Notifications")
+                .font(.headline)
+
+            Toggle(isOn: $settings.showNowPlayingNotification) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Now Playing Notification")
+                        .font(.subheadline)
+                    Text("Show a notification when the song changes")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func shortcutRow(_ action: String, shortcut: String) -> some View {
+        HStack {
+            Text(action)
+                .font(.subheadline)
+            Spacer()
+            Text(shortcut)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.secondary.opacity(0.15))
+                .cornerRadius(6)
         }
     }
 }
 
-// MARK: - Theme Button
+// MARK: - Theme Card
 
-struct ThemeButton: View {
+struct ThemeCard: View {
     let theme: LyricsTheme
     let isSelected: Bool
     let action: () -> Void
-    
-    private var colors: [Color] {
+
+    private var bgColor: Color {
         switch theme {
-        case .dark: return [Color(white: 0.15), Color(white: 0.1)]
-        case .light: return [Color(white: 0.95), Color(white: 0.9)]
-        case .neon: return [Color(red: 0.1, green: 0.05, blue: 0.2), Color(red: 0, green: 0.3, blue: 0.3)]
-        case .minimal: return [Color.black.opacity(0.8), Color.black.opacity(0.6)]
-        case .transparent: return [Color.clear, Color.clear]
-        case .custom: return [Color.purple.opacity(0.3), Color.blue.opacity(0.3)]
+        case .dark: return Color(white: 0.12)
+        case .light: return Color(white: 0.95)
+        case .subtle: return Color(red: 0.13, green: 0.13, blue: 0.15)
+        case .warm: return Color(red: 0.16, green: 0.11, blue: 0.09)
+        case .cool: return Color(red: 0.09, green: 0.11, blue: 0.16)
+        case .minimal: return Color.black
+        case .transparent: return Color.clear
+        case .custom: return Color.purple.opacity(0.3)
         }
     }
-    
-    private var isTransparentTheme: Bool {
-        theme == .transparent
+
+    private var textColor: Color {
+        switch theme {
+        case .light: return .black
+        case .warm: return Color(red: 1.0, green: 0.85, blue: 0.7)
+        case .cool: return Color(red: 0.75, green: 0.9, blue: 1.0)
+        default: return .white
+        }
     }
-    
+
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 ZStack {
-                    if isTransparentTheme {
-                        // Checkerboard pattern for transparent
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(
-                                .linearGradient(
-                                    colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                    if theme == .transparent {
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.secondary.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [3]))
+                            .frame(height: 44)
+                            .overlay(
+                                Text("Aa")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.secondary)
                             )
-                            .frame(height: 44)
-                        
-                        Text("Aa")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .shadow(color: .black, radius: 4)
                     } else {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom))
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(bgColor)
                             .frame(height: 44)
+                            .overlay(
+                                Text("Aa")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(textColor)
+                            )
                     }
                 }
                 .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
                 )
-                
+
                 Text(theme.rawValue)
                     .font(.caption2)
-                    .fontWeight(isSelected ? .semibold : .regular)
                     .foregroundColor(isSelected ? .accentColor : .secondary)
             }
         }
@@ -542,94 +571,32 @@ struct CustomThemeButton: View {
     }
 }
 
-// MARK: - Size Button
+// MARK: - Enums
 
-struct SizeButton: View {
-    let size: LyricsWindowSize
-    let isSelected: Bool
-    let action: () -> Void
-    
-    private var widthFraction: CGFloat {
-        switch size {
-        case .small: return 0.5
-        case .medium: return 0.7
-        case .large: return 0.9
+enum FontOption: String, CaseIterable {
+    case sans = "Sans"
+    case serif = "Serif"
+    case rounded = "Rounded"
+    case mono = "Mono"
+
+    var id: String {
+        switch self {
+        case .sans: return "Default"
+        case .serif: return "Serif"
+        case .rounded: return "Rounded"
+        case .mono: return "Monospaced"
         }
     }
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.05))
-                        .frame(height: 48)
-                    
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
-                        .frame(width: 60 * widthFraction, height: 24)
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
-                )
-                
-                Text(size.rawValue)
-                    .font(.caption)
-                    .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
-            }
+
+    var design: Font.Design {
+        switch self {
+        case .sans: return .default
+        case .serif: return .serif
+        case .rounded: return .rounded
+        case .mono: return .monospaced
         }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
     }
 }
-
-// MARK: - Animation Button
-
-struct AnimationButton: View {
-    let style: LyricsAnimationStyle
-    let isSelected: Bool
-    let action: () -> Void
-    
-    private var icon: String {
-        switch style {
-        case .slideUp: return "arrow.up.and.down.text.horizontal"
-        case .slideLeft: return "arrow.left.to.line"
-        case .slideRight: return "arrow.right.to.line"
-        case .fade: return "circle.dotted"
-        case .zoom: return "plus.magnifyingglass"
-        case .blur: return "sparkles"
-        case .flip: return "cube.transparent"
-        }
-    }
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.1))
-                        .frame(width: 80, height: 60)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(isSelected ? .white : .primary.opacity(0.8))
-                }
-                
-                Text(style.rawValue.replacingOccurrences(of: "Slide ", with: ""))
-                    .font(.caption2)
-                    .fontWeight(isSelected ? .bold : .medium)
-                    .foregroundColor(isSelected ? .accentColor : .primary.opacity(0.7))
-            }
-        }
-        .buttonStyle(.plain)
-        .scaleEffect(isSelected ? 1.05 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-    }
-}
-
-// MARK: - Font Size Preset
 
 enum FontSizePreset: String, CaseIterable {
     case small = "S"
@@ -656,56 +623,23 @@ enum FontSizePreset: String, CaseIterable {
     }
 }
 
-// MARK: - Font Size Button
+// MARK: - Animation Style Extension
 
-struct FontSizeButton: View {
-    let preset: FontSizePreset
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.08))
-                        .frame(height: 52)
-
-                    Text("Aa")
-                        .font(.system(size: textSize, weight: .semibold, design: .rounded))
-                        .foregroundColor(isSelected ? .white : .primary.opacity(0.7))
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: 1)
-                )
-
-                VStack(spacing: 1) {
-                    Text(preset.rawValue)
-                        .font(.system(size: 12, weight: isSelected ? .bold : .medium))
-                        .foregroundColor(isSelected ? .accentColor : .secondary)
-
-                    Text("\(Int(preset.size))pt")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.secondary.opacity(0.7))
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var textSize: CGFloat {
-        switch preset {
-        case .small: return 14
-        case .medium: return 16
-        case .large: return 18
-        case .extraLarge: return 20
+extension LyricsAnimationStyle {
+    var shortName: String {
+        switch self {
+        case .slideUp: return "Up"
+        case .slideLeft: return "Left"
+        case .slideRight: return "Right"
+        case .fade: return "Fade"
+        case .zoom: return "Zoom"
+        case .blur: return "Blur"
+        case .flip: return "Flip"
         }
     }
 }
 
 #Preview {
     CustomizationView()
-        .frame(width: 450, height: 750)
+        .frame(width: 420, height: 800)
 }

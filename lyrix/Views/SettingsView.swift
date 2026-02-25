@@ -16,14 +16,14 @@ struct SettingsView: View {
     @State private var songChangeAnimation = false
     @State private var lastSongId: String = ""
     @State private var showCopiedToast = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Now Playing Header
             nowPlayingHeader
-            
+
             Divider()
-            
+
             // Main content
             if viewModel.isLoading {
                 loadingView
@@ -47,9 +47,9 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     // MARK: - Now Playing Header
-    
+
     private var nowPlayingHeader: some View {
         VStack(spacing: 20) {
             HStack(spacing: 20) {
@@ -160,7 +160,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
             }
-            
+
             // Progress bar
             if let duration = viewModel.currentSong?.duration, duration > 0 {
                 VStack(spacing: 6) {
@@ -168,14 +168,14 @@ struct SettingsView: View {
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.secondary.opacity(0.1))
-                            
+
                             RoundedRectangle(cornerRadius: 2)
                                 .fill(Color.accentColor)
                                 .frame(width: geo.size.width * min(viewModel.playbackPosition / duration, 1.0))
                         }
                     }
                     .frame(height: 4)
-                    
+
                     HStack {
                         Text(formatTime(viewModel.playbackPosition))
                         Spacer()
@@ -186,7 +186,7 @@ struct SettingsView: View {
                     .monospacedDigit()
                 }
             }
-            
+
             // Action buttons
             HStack(spacing: 12) {
                 Button(action: { floatingManager.toggle() }) {
@@ -198,17 +198,17 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(floatingManager.isVisible ? .orange : .accentColor)
-                
+
                 Button(action: { viewModel.refreshNowPlaying() }) {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.bordered)
-                
+
                 Button(action: { showManualSearch.toggle() }) {
                     Image(systemName: "magnifyingglass")
                 }
                 .buttonStyle(.bordered)
-                
+
                 if viewModel.currentSong != nil {
                     Button(action: {
                         Task { await viewModel.refreshLyrics() }
@@ -234,7 +234,7 @@ struct SettingsView: View {
     }
 
     // MARK: - Lyrics Content View
-    
+
     private var lyricsContentView: some View {
         VStack(spacing: 0) {
             // Lyrics toolbar
@@ -266,6 +266,17 @@ struct SettingsView: View {
 
                 Spacer()
 
+                // Sync indicator
+                if let lyrics = viewModel.lyrics {
+                    HStack(spacing: 4) {
+                        Image(systemName: lyrics.isSynced ? "checkmark.circle.fill" : "circle")
+                            .font(.caption)
+                        Text(lyrics.source.rawValue)
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
+
                 // Quick actions
                 if viewModel.lyrics != nil {
                     HStack(spacing: 8) {
@@ -284,6 +295,19 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                // Report wrong lyrics button
+                Button(action: { viewModel.reportWrongLyrics() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "flag")
+                            .font(.caption)
+                        Text("Report")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Report wrong lyrics on LRCLib")
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -373,36 +397,36 @@ struct SettingsView: View {
     }
 
     // MARK: - Loading View
-    
+
     private var loadingView: some View {
         VStack(spacing: 20) {
             ProgressView()
                 .scaleEffect(1.5)
-            
+
             Text("Finding lyrics...")
                 .font(.headline)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     // MARK: - Error View
-    
+
     private func errorView(_ error: String) -> some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
-            
+
             Text("Couldn't load lyrics")
                 .font(.headline)
-            
+
             Text(error)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            
+
             Button(action: {
                 Task { await viewModel.refreshLyrics() }
             }) {
@@ -412,41 +436,41 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     // MARK: - No Lyrics View
-    
+
     private var noLyricsView: some View {
         VStack(spacing: 20) {
             Image(systemName: "text.badge.xmark")
                 .font(.system(size: 48))
                 .foregroundColor(.secondary.opacity(0.5))
-            
+
             Text("No lyrics available")
                 .font(.headline)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     // MARK: - Empty State View
-    
+
     private var emptyStateView: some View {
         VStack(spacing: 24) {
             ZStack {
                 Circle()
                     .fill(Color.accentColor.opacity(0.1))
                     .frame(width: 100, height: 100)
-                
+
                 Image(systemName: "music.note.list")
                     .font(.system(size: 40))
                     .foregroundColor(.accentColor)
             }
-            
+
             VStack(spacing: 8) {
                 Text("Ready for lyrics")
                     .font(.title2)
                     .fontWeight(.semibold)
-                
+
                 Text("Play a song in Music, Spotify, or any media app\nand lyrics will appear automatically")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -455,9 +479,9 @@ struct SettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     // MARK: - Lyrics View
-    
+
     private func lyricsView(_ lyrics: Lyrics) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -483,9 +507,9 @@ struct SettingsView: View {
             }
         }
     }
-    
+
     // MARK: - Helpers
-    
+
     private func formatTime(_ seconds: TimeInterval) -> String {
         let mins = Int(seconds) / 60
         let secs = Int(seconds) % 60
@@ -528,7 +552,7 @@ struct LyricLineView: View {
     let line: LyricLine
     let isCurrentLine: Bool
     let isSynced: Bool
-    
+
     var body: some View {
         HStack(spacing: 12) {
             if isSynced, let timestamp = line.formattedTimestamp {
@@ -538,7 +562,7 @@ struct LyricLineView: View {
                     .frame(width: 65, alignment: .trailing)
                     .monospacedDigit()
             }
-            
+
             Text(line.text)
                 .font(isCurrentLine ? .title3 : .body)
                 .fontWeight(isCurrentLine ? .bold : .regular)

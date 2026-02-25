@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import AppKit
 
 /// ViewModel for lyrics display and synchronization
 @MainActor
@@ -237,11 +238,27 @@ class LyricsViewModel: ObservableObject {
     }
     
     // MARK: - Manual Song Entry (for testing)
-    
+
     func searchLyrics(title: String, artist: String, album: String? = nil) async {
         let song = Song(title: title, artist: artist, album: album)
         currentSong = song
         lastFetchedSong = song
         await fetchLyrics(for: song)
+    }
+
+    // MARK: - Report Wrong Lyrics
+
+    /// Opens the lyrics source website so users can report/correct lyrics
+    func reportWrongLyrics() {
+        guard let song = currentSong else { return }
+
+        // Build search URL for LRCLib
+        let query = "\(song.title) \(song.artist)"
+        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://lrclib.net/search?q=\(encodedQuery)") else {
+            return
+        }
+
+        NSWorkspace.shared.open(url)
     }
 }
