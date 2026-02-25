@@ -256,19 +256,4 @@ class LyricsViewModel: ObservableObject {
         await fetchLyrics(for: song)
     }
 
-    // MARK: - Report Wrong Lyrics
-
-    /// Opens the lyrics source website so users can report/correct lyrics
-    func reportWrongLyrics() {
-        guard let song = currentSong else { return }
-
-        // Build search URL for LRCLib
-        let query = "\(song.title) \(song.artist)"
-        guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "https://lrclib.net/search?q=\(encodedQuery)") else {
-            return
-        }
-
-        NSWorkspace.shared.open(url)
-    }
 }
