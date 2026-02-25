@@ -60,6 +60,9 @@ class LyricsSettings: ObservableObject {
     
     // MARK: - Floating Window State
     @AppStorage("lyrics.floatingEnabled") var floatingEnabled: Bool = false
+
+    // MARK: - Notifications
+    @AppStorage("lyrics.showNowPlayingNotification") var showNowPlayingNotification: Bool = true
     
     // MARK: - Window Position (runtime only)
     @Published var windowX: CGFloat = 100
