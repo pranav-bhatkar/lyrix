@@ -23,6 +23,8 @@ struct ContentView: View {
                     switch selection {
                     case .home:
                         SettingsView()
+                    case .library:
+                        LibraryView()
                     case .customize:
                         CustomizationView()
                     case .about:

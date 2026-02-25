@@ -236,6 +236,18 @@ struct SettingsView: View {
                         }
                         .foregroundColor(.secondary)
                     }
+
+                    Button(action: { viewModel.reportWrongLyrics() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flag")
+                                .font(.caption)
+                            Text("Report")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Report wrong lyrics on LRCLib")
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)

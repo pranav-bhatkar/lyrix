@@ -9,7 +9,8 @@ import SwiftUI
 
 struct CustomizationView: View {
     @ObservedObject var settings = LyricsSettings.shared
-    
+    @State private var showAdvanced = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -18,71 +19,45 @@ struct CustomizationView: View {
                     .padding(.top, 8)
                 
                 VStack(spacing: 20) {
-                    // Appearance & Theme
-                    CustomSection(title: "Appearance", icon: "paintpalette") {
-                        VStack(spacing: 20) {
-                            themeGrid
-                            
-                            Divider()
-                            
-                            HStack(alignment: .bottom) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Window Glow")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Toggle("Enable Glow", isOn: $settings.showGlow)
-                                        .toggleStyle(.switch)
-                                        .labelsHidden()
-                                }
-                                
-                                Spacer()
-                                
-                                VStack(alignment: .trailing, spacing: 8) {
-                                    Text("Corner Radius")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    
-                                    HStack(spacing: 12) {
-                                        Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
-                                            .frame(width: 120)
-                                        Text("\(Int(settings.customCornerRadius))px")
-                                            .font(.caption.monospacedDigit())
-                                            .foregroundColor(.primary.opacity(0.8))
-                                            .frame(width: 35, alignment: .trailing)
-                                    }
-                                }
-                            }
-                        }
+                    // Theme
+                    CustomSection(title: "Theme", icon: "paintpalette") {
+                        themeGrid
                     }
                     
                     // Typography
                     CustomSection(title: "Typography", icon: "textformat") {
-                        VStack(spacing: 16) {
-                            HStack(spacing: 20) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Font Family")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Picker("Font Family", selection: $settings.fontName) {
-                                        Text("Sans").tag("Default")
-                                        Text("Serif").tag("Serif")
-                                        Text("Rounded").tag("Rounded")
-                                        Text("Mono").tag("Monospaced")
-                                    }
-                                    .pickerStyle(.segmented)
-                                    .labelsHidden()
+                        VStack(spacing: 14) {
+                            // Font Family
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Font")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                HStack(spacing: 8) {
+                                    FontPreviewButton(label: "Sans", tag: "Default", design: .default, selectedFont: $settings.fontName)
+                                    FontPreviewButton(label: "Serif", tag: "Serif", design: .serif, selectedFont: $settings.fontName)
+                                    FontPreviewButton(label: "Rounded", tag: "Rounded", design: .rounded, selectedFont: $settings.fontName)
+                                    FontPreviewButton(label: "Mono", tag: "Monospaced", design: .monospaced, selectedFont: $settings.fontName)
                                 }
-                                
-                                VStack(alignment: .leading, spacing: 4) {
+                            }
+
+                            Divider()
+
+                            // Size Presets
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
                                     Text("Size")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
-                                    HStack {
-                                        Slider(value: $settings.fontSize, in: 14...32, step: 1)
-                                        Text("\(Int(settings.fontSize))pt")
-                                            .font(.caption.monospacedDigit())
-                                            .frame(width: 35)
-                                    }
+                                    Spacer()
+                                    Text("\(Int(settings.fontSize))pt")
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundColor(.secondary)
+                                }
+                                HStack(spacing: 8) {
+                                    SizePresetButton(label: "S", subtitle: "16", size: 16, selectedSize: $settings.fontSize)
+                                    SizePresetButton(label: "M", subtitle: "20", size: 20, selectedSize: $settings.fontSize)
+                                    SizePresetButton(label: "L", subtitle: "24", size: 24, selectedSize: $settings.fontSize)
+                                    SizePresetButton(label: "XL", subtitle: "28", size: 28, selectedSize: $settings.fontSize)
                                 }
                             }
                         }
@@ -158,7 +133,7 @@ struct CustomizationView: View {
 
                     // Motion
                     CustomSection(title: "Motion", icon: "wand.and.stars") {
-                        VStack(spacing: 16) {
+                        VStack(spacing: 14) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     ForEach(LyricsAnimationStyle.allCases, id: \.self) { style in
@@ -171,43 +146,83 @@ struct CustomizationView: View {
                                 }
                                 .padding(.vertical, 4)
                             }
-                            
-                            VStack(spacing: 12) {
-                                HStack(alignment: .bottom) {
-                                    VStack(alignment: .leading, spacing: 6) {
-                                        Text("Animation Speed")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        
-                                        Picker("Speed", selection: $settings.animationSpeed) {
-                                            Text("Slow").tag("Slow")
-                                            Text("Normal").tag("Normal")
-                                            Text("Fast").tag("Fast")
-                                        }
-                                        .pickerStyle(.segmented)
-                                        .labelsHidden()
-                                        .frame(width: 180)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    if settings.animationStyle == "Slide Up" {
-                                        VStack(alignment: .trailing, spacing: 6) {
-                                            Text("Show Lines")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            
-                                            HStack(spacing: 16) {
-                                                Toggle("Prev", isOn: $settings.showPreviousLine)
-                                                Toggle("Next", isOn: $settings.showNextLine)
-                                            }
-                                            .toggleStyle(.checkbox)
-                                        }
-                                    }
+
+                            HStack {
+                                Text("Speed")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Picker("Speed", selection: $settings.animationSpeed) {
+                                    Text("Slow").tag("Slow")
+                                    Text("Normal").tag("Normal")
+                                    Text("Fast").tag("Fast")
                                 }
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+                                .frame(width: 200)
                             }
                         }
                     }
+
+                    // Advanced (collapsed by default)
+                    DisclosureGroup(isExpanded: $showAdvanced) {
+                        VStack(spacing: 16) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Glow Effect")
+                                        .font(.subheadline)
+                                    Text("Subtle glow behind current lyric line")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Toggle("", isOn: $settings.showGlow)
+                                    .toggleStyle(.switch)
+                                    .labelsHidden()
+                            }
+
+                            Divider()
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text("Corner Radius")
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Text("\(Int(settings.customCornerRadius))px")
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundColor(.secondary)
+                                }
+                                Slider(value: $settings.customCornerRadius, in: 0...32, step: 2)
+                            }
+
+                            if settings.animationStyle == "Slide Up" {
+                                Divider()
+
+                                HStack {
+                                    Text("Show Lines")
+                                        .font(.subheadline)
+                                    Spacer()
+                                    HStack(spacing: 16) {
+                                        Toggle("Previous", isOn: $settings.showPreviousLine)
+                                        Toggle("Next", isOn: $settings.showNextLine)
+                                    }
+                                    .toggleStyle(.checkbox)
+                                }
+                            }
+                        }
+                        .padding(.top, 12)
+                    } label: {
+                        Label("Advanced", systemImage: "gearshape")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary.opacity(0.8))
+                    }
+                    .padding(16)
+                    .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                    )
                 }
                 .padding(.horizontal, 24)
                 
@@ -480,6 +495,75 @@ struct AnimationButton: View {
         .buttonStyle(.plain)
         .scaleEffect(isSelected ? 1.05 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+// MARK: - Font Preview Button
+
+struct FontPreviewButton: View {
+    let label: String
+    let tag: String
+    let design: Font.Design
+    @Binding var selectedFont: String
+
+    var isSelected: Bool { selectedFont == tag }
+
+    var body: some View {
+        Button { selectedFont = tag } label: {
+            VStack(spacing: 4) {
+                Text("Lyrics")
+                    .font(.system(size: 14, weight: .semibold, design: design))
+                    .frame(height: 36)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: isSelected ? 1.5 : 1)
+                    )
+                    .foregroundColor(isSelected ? .accentColor : .primary)
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Size Preset Button
+
+struct SizePresetButton: View {
+    let label: String
+    let subtitle: String
+    let size: Int
+    @Binding var selectedSize: Double
+
+    var isSelected: Bool { Int(selectedSize) == size }
+
+    var body: some View {
+        Button { selectedSize = Double(size) } label: {
+            VStack(spacing: 1) {
+                Text(label)
+                    .font(.subheadline.weight(.semibold))
+                Text("\(subtitle)pt")
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 42)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.08))
+            )
+            .foregroundColor(isSelected ? .white : .primary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.clear : Color.secondary.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
