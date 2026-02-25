@@ -32,6 +32,7 @@ enum LyricsTheme: String, CaseIterable {
     case neon = "Neon"
     case minimal = "Minimal"
     case transparent = "Transparent"
+    case custom = "Custom"
 }
 
 /// User preferences for floating lyrics appearance
@@ -81,8 +82,14 @@ class LyricsSettings: ObservableObject {
     }
     
     // MARK: - Theme Colors
-    
+
+    private var customTheme: CustomTheme? {
+        guard theme == "Custom" else { return nil }
+        return CustomThemeManager.shared.activeTheme
+    }
+
     var backgroundColor: Color {
+        if let custom = customTheme { return custom.bgColor }
         switch theme {
         case "Light": return Color(white: 0.95)
         case "Neon": return Color(red: 0.05, green: 0.02, blue: 0.15)
@@ -91,16 +98,18 @@ class LyricsSettings: ObservableObject {
         default: return Color(white: 0.1)
         }
     }
-    
+
     var backgroundOpacity: Double {
+        if let custom = customTheme { return custom.backgroundOpacity }
         switch theme {
         case "Minimal": return 0.6
         case "Transparent": return 0
         default: return 0.85
         }
     }
-    
+
     var currentLineColor: Color {
+        if let custom = customTheme { return custom.textColor }
         switch theme {
         case "Light": return .black
         case "Neon": return Color(red: 0, green: 1, blue: 0.8)
@@ -108,8 +117,9 @@ class LyricsSettings: ObservableObject {
         default: return .white
         }
     }
-    
+
     var dimmedColor: Color {
+        if let custom = customTheme { return custom.secondaryTextColor }
         switch theme {
         case "Light": return Color(white: 0.4)
         case "Neon": return Color(red: 0.4, green: 0.5, blue: 0.6)
@@ -117,8 +127,9 @@ class LyricsSettings: ObservableObject {
         default: return Color(white: 0.55)
         }
     }
-    
+
     var glowColor: Color {
+        if let custom = customTheme { return custom.glow }
         switch theme {
         case "Neon": return Color(red: 0, green: 1, blue: 0.8)
         case "Light": return .clear
@@ -126,9 +137,15 @@ class LyricsSettings: ObservableObject {
         default: return currentLineColor
         }
     }
-    
+
+    var glowIntensity: Double {
+        if let custom = customTheme { return custom.glowIntensity }
+        return 0.5
+    }
+
     var blurEnabled: Bool {
-        theme != "Minimal" && theme != "Transparent"
+        if let custom = customTheme { return custom.blurEnabled }
+        return theme != "Minimal" && theme != "Transparent"
     }
     
     var cornerRadius: CGFloat {
