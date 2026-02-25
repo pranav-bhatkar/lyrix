@@ -66,6 +66,11 @@ class LyricsSettings: ObservableObject {
     // MARK: - Notifications
     @AppStorage("lyrics.showNowPlayingNotification") var showNowPlayingNotification: Bool = true
 
+    // MARK: - Menu Bar Settings
+    @AppStorage("lyrics.menuBarEnabled") var menuBarEnabled: Bool = true
+    @AppStorage("lyrics.menuBarMaxLength") var menuBarMaxLength: Int = 0  // 0 = no limit
+
+
     // MARK: - Window Position (runtime only)
     @Published var windowX: CGFloat = 100
     @Published var windowY: CGFloat = 100

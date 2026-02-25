@@ -40,6 +40,8 @@ struct CustomizationView: View {
                     Divider()
                     keyboardShortcutsSection
                     Divider()
+                    menuBarSection
+                    Divider()
                     notificationsSection
                 }
                 .padding(.horizontal, 20)
@@ -413,6 +415,50 @@ struct CustomizationView: View {
         }
     }
 
+    // MARK: - Menu Bar
+
+    private var menuBarSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Menu Bar")
+                .font(.headline)
+
+            Toggle(isOn: $settings.menuBarEnabled) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Show lyrics in menu bar")
+                        .font(.subheadline)
+                    Text("Display current lyric line in the menu bar")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .onChange(of: settings.menuBarEnabled) { _, enabled in
+                if enabled {
+                    MenuBarManager.shared.enable()
+                } else {
+                    MenuBarManager.shared.disable()
+                }
+            }
+
+            HStack {
+                Text("Max characters")
+                    .font(.subheadline)
+                Spacer()
+                Picker("Max characters", selection: $settings.menuBarMaxLength) {
+                    Text("No limit").tag(0)
+                    Text("50").tag(50)
+                    Text("80").tag(80)
+                    Text("100").tag(100)
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(width: 120)
+            }
+            .opacity(settings.menuBarEnabled ? 1 : 0.4)
+            .disabled(!settings.menuBarEnabled)
+        }
+    }
+
     // MARK: - Notifications
 
     private var notificationsSection: some View {
@@ -636,6 +682,75 @@ extension LyricsAnimationStyle {
         case .blur: return "Blur"
         case .flip: return "Flip"
         }
+    }
+}
+
+// MARK: - Font Preview Button
+
+struct FontPreviewButton: View {
+    let label: String
+    let tag: String
+    let design: Font.Design
+    @Binding var selectedFont: String
+
+    var isSelected: Bool { selectedFont == tag }
+
+    var body: some View {
+        Button { selectedFont = tag } label: {
+            VStack(spacing: 4) {
+                Text("Lyrics")
+                    .font(.system(size: 14, weight: .semibold, design: design))
+                    .frame(height: 36)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.06))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.15), lineWidth: isSelected ? 1.5 : 1)
+                    )
+                    .foregroundColor(isSelected ? .accentColor : .primary)
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Size Preset Button
+
+struct SizePresetButton: View {
+    let label: String
+    let subtitle: String
+    let size: Int
+    @Binding var selectedSize: Double
+
+    var isSelected: Bool { Int(selectedSize) == size }
+
+    var body: some View {
+        Button { selectedSize = Double(size) } label: {
+            VStack(spacing: 1) {
+                Text(label)
+                    .font(.subheadline.weight(.semibold))
+                Text("\(subtitle)pt")
+                    .font(.caption2)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 42)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.08))
+            )
+            .foregroundColor(isSelected ? .white : .primary)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.clear : Color.secondary.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
