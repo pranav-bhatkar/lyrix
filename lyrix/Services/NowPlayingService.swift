@@ -86,7 +86,51 @@ class NowPlayingService: ObservableObject {
         let script = "tell application \"\(player)\" to previous track"
         Task { await runAppleScript(script) }
     }
-    
+
+    func seekForward(seconds: Double = 10) {
+        guard let player = activePlayer else { return }
+        let script: String
+        if player == "Spotify" {
+            script = """
+            tell application "Spotify"
+                set newPos to (player position) + \(seconds)
+                set player position to newPos
+            end tell
+            """
+        } else {
+            script = """
+            tell application "Music"
+                set newPos to (player position) + \(seconds)
+                set player position to newPos
+            end tell
+            """
+        }
+        Task { await runAppleScript(script) }
+    }
+
+    func seekBackward(seconds: Double = 10) {
+        guard let player = activePlayer else { return }
+        let script: String
+        if player == "Spotify" {
+            script = """
+            tell application "Spotify"
+                set newPos to (player position) - \(seconds)
+                if newPos < 0 then set newPos to 0
+                set player position to newPos
+            end tell
+            """
+        } else {
+            script = """
+            tell application "Music"
+                set newPos to (player position) - \(seconds)
+                if newPos < 0 then set newPos to 0
+                set player position to newPos
+            end tell
+            """
+        }
+        Task { await runAppleScript(script) }
+    }
+
     func openPlayerApp() {
         guard let player = activePlayer else { return }
         let script = "tell application \"\(player)\" to activate"
