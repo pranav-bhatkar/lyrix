@@ -7,11 +7,21 @@
 
 import SwiftUI
 
+// MARK: - Shared View Model
+/// Shared LyricsViewModel instance for use across the app
+@MainActor
+class SharedViewModel {
+    static let shared = SharedViewModel()
+    let lyricsViewModel = LyricsViewModel()
+    private init() {}
+}
+
 // MARK: - App Delegate
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
             KeyboardShortcutManager.shared.setup()
+            MenuBarManager.shared.setup(viewModel: SharedViewModel.shared.lyricsViewModel)
         }
     }
 

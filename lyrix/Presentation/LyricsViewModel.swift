@@ -237,6 +237,16 @@ class LyricsViewModel: ObservableObject {
         )
     }
     
+    // MARK: - Report Wrong Lyrics
+
+    func reportWrongLyrics() {
+        guard let song = currentSong else { return }
+        let query = "\(song.title) \(song.artist)"
+        guard let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://lrclib.net/search?q=\(encoded)") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     // MARK: - Manual Song Entry (for testing)
 
     func searchLyrics(title: String, artist: String, album: String? = nil) async {

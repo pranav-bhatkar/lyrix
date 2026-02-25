@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @StateObject private var viewModel = LyricsViewModel()
+    @ObservedObject private var viewModel = SharedViewModel.shared.lyricsViewModel
     @StateObject private var floatingManager = FloatingLyricsManager.shared
     @State private var manualTitle = ""
     @State private var manualArtist = ""
@@ -294,6 +294,18 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    Button(action: { viewModel.reportWrongLyrics() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flag")
+                                .font(.caption)
+                            Text("Report")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Report wrong lyrics on LRCLib")
                 }
 
                 // Report wrong lyrics button
